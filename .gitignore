@@ -1,0 +1,8 @@
+# Ignore files
+.next/
+node_modules/
+.env
+.env.local
+*.db
+tsconfig.tsbuildinfo
+.DS_Store
