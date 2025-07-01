@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Table,
   TableHeader,
@@ -79,9 +79,6 @@ const roleLabels: Record<string, string> = {
   LEGAL_PERSONNEL: 'Hukuk Personeli',
   INSTITUTION_USER: 'Kurum Kullanıcısı',
   
-  idp_personnel: 'İDP Personeli',
-  legal_personnel: 'Hukuk Personeli',
-  institution_user: 'Kurum Kullanıcısı',
 
   default: 'Bilinmeyen Rol', // Fallback label
 };
@@ -104,7 +101,7 @@ const roleColors: Record<string, 'default' | 'primary' | 'secondary' | 'success'
 
 export default function UsersPage() {
   const { token } = useAuth();
-  const [users, setUsers] = useState<UserData[]>([]);
+  const [allUsers, setAllUsers] = useState<UserData[]>([]); // Tüm kullanıcılar
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
@@ -112,8 +109,6 @@ export default function UsersPage() {
   
   // Sayfalama state'leri
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalUsers, setTotalUsers] = useState(0);
   const [limit] = useState(20); // Sayfa başına 20 kullanıcı
   
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
@@ -132,11 +127,16 @@ export default function UsersPage() {
 
   useEffect(() => {
     if (token && token.trim()) {
-      fetchUsers();
+      fetchAllUsers();
     }
-  }, [token, page, searchTerm]);
+  }, [token]);
 
-  const fetchUsers = async () => {
+  // Arama değiştiğinde sayfa 1'e döndür
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
+  const fetchAllUsers = async () => {
     if (!token || !token.trim()) {
       toast.error('Oturum bilgisi bulunamadı');
       return;
@@ -145,17 +145,8 @@ export default function UsersPage() {
     try {
       setIsLoading(true);
       
-      // API çağrısına sayfalama ve arama parametrelerini ekle
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-      });
-      
-      if (searchTerm.trim()) {
-        params.append('search', searchTerm.trim());
-      }
-      
-      const response = await fetch(`/api/users?${params.toString()}`, {
+      // Tüm kullanıcıları çek (sayfalama olmadan)
+      const response = await fetch('/api/users?limit=1000', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -175,13 +166,7 @@ export default function UsersPage() {
             institutionResponses: 0,
           }
         }));
-        setUsers(formattedUsers);
-        
-        // Sayfalama bilgilerini güncelle
-        if (data.pagination) {
-          setTotalPages(data.pagination.totalPages);
-          setTotalUsers(data.pagination.totalUsers);
-        }
+        setAllUsers(formattedUsers);
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || 'Kullanıcılar yüklenirken hata oluştu');
@@ -194,10 +179,31 @@ export default function UsersPage() {
     }
   };
 
-  // Arama değiştiğinde sayfa 1'e döndür
+  // Client-side filtreleme
+  const filteredUsers = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return allUsers;
+    }
+    
+    const searchLower = searchTerm.toLowerCase();
+    return allUsers.filter(user => 
+      user.username?.toLowerCase().includes(searchLower) ||
+      user.email?.toLowerCase().includes(searchLower) ||
+      user.fullName?.toLowerCase().includes(searchLower) ||
+      user.institution?.toLowerCase().includes(searchLower) ||
+      roleLabels[user.role]?.toLowerCase().includes(searchLower)
+    );
+  }, [allUsers, searchTerm]);
+
+  // Sayfalama hesaplamaları
+  const totalUsers = filteredUsers.length;
+  const totalPages = Math.ceil(totalUsers / limit);
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const users = filteredUsers.slice(startIndex, endIndex);
+
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
-    setPage(1);
   };
 
   const handleCreate = async () => {
@@ -232,7 +238,7 @@ export default function UsersPage() {
       if (response.ok) {
         const data = await response.json();
         toast.success('Kullanıcı başarıyla oluşturuldu');
-        fetchUsers();
+        fetchAllUsers(); // Tüm kullanıcıları yeniden çek
         onCreateClose();
         resetForm();
       } else {
@@ -285,7 +291,7 @@ export default function UsersPage() {
       
       if (response.ok) {
         toast.success('Kullanıcı başarıyla güncellendi');
-        fetchUsers();
+        fetchAllUsers(); // Tüm kullanıcıları yeniden çek
         onEditClose();
         resetForm();
       } else {
@@ -320,7 +326,7 @@ export default function UsersPage() {
       
       if (response.ok) {
         toast.success('Kullanıcı başarıyla silindi');
-        fetchUsers();
+        fetchAllUsers(); // Tüm kullanıcıları yeniden çek
         onDeleteClose();
       } else {
         const errorData = await response.json();
@@ -564,7 +570,7 @@ export default function UsersPage() {
           </div>
           <Pagination
             total={totalPages}
-            current={page}
+            page={page}
             onChange={(newPage) => setPage(newPage)}
           />
         </div>
