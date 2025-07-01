@@ -91,10 +91,10 @@ export default function LoginPage() {
           <div className="space-y-2 text-sm text-default-500">
             <p className="font-semibold">Demo Kullanıcılar:</p>
             <ul className="space-y-1 ml-4">
-              <li>• Admin: admin / admin123</li>
-              <li>• IDP Personeli: idp_user / idp123</li>
-              <li>• Hukuk Personeli: legal_user / legal123</li>
-              <li>• Kurum Kullanıcısı: institution_user / inst123</li>
+              <li>• Admin: admin / 123456</li>
+              <li>• IDP Personeli: idp_user / 123456</li>
+              <li>• Hukuk Personeli: legal_user / 123456</li>
+              <li>• Kurum Kullanıcısı: kurum_user / 123456</li>
             </ul>
           </div>
         </CardBody>

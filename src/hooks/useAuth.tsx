@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { User, UserRole } from '@/types';
-import { demoAPI, storage } from '@/lib/demo-data';
+import { api } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -16,6 +16,35 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Local storage helper functions
+const storage = {
+  getToken: (): string | null => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('dmm_auth_token');
+  },
+  setToken: (token: string | null) => {
+    if (typeof window === 'undefined') return;
+    if (token) {
+      localStorage.setItem('dmm_auth_token', token);
+    } else {
+      localStorage.removeItem('dmm_auth_token');
+    }
+  },
+  getCurrentUser: (): User | null => {
+    if (typeof window === 'undefined') return null;
+    const stored = localStorage.getItem('dmm_current_user');
+    return stored ? JSON.parse(stored) : null;
+  },
+  setCurrentUser: (user: User | null) => {
+    if (typeof window === 'undefined') return;
+    if (user) {
+      localStorage.setItem('dmm_current_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('dmm_current_user');
+    }
+  },
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -29,8 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(savedToken);
       
       try {
-        const userData = await demoAPI.getCurrentUser();
+        const userData = await api.getCurrentUser(savedToken);
         setUser(userData);
+        storage.setCurrentUser(userData);
       } catch (error) {
         console.error('checkAuth error:', error);
         storage.setToken(null);
@@ -57,10 +87,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string, fromUrl?: string | null) => {
     try {
-      const { user: userData, token: newToken } = await demoAPI.login(username, password);
+      const { user: userData, token: newToken } = await api.login(username, password);
       
       setToken(newToken);
       setUser(userData);
+      storage.setToken(newToken);
+      storage.setCurrentUser(userData);
       setIsLoading(false);
       
       toast.success('Giriş başarılı!');
@@ -96,13 +128,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await demoAPI.logout();
+      if (token) {
+        await api.logout(token);
+      }
     } catch (error) {
       // Continue with logout even if API call fails
     }
     
     setUser(null);
     setToken(null);
+    storage.setToken(null);
+    storage.setCurrentUser(null);
     toast.success('Çıkış yapıldı');
     router.push('/login');
   };

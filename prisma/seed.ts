@@ -6,9 +6,11 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database...');
 
-  // Create demo users
-  const adminUser = await prisma.user.create({
-    data: {
+  // Create demo users (only if they don't exist)
+  const adminUser = await prisma.user.upsert({
+    where: { username: 'admin' },
+    update: {},
+    create: {
       username: 'admin',
       password: await bcryptjs.hash('123456', 12),
       email: 'admin@dmm.gov.tr',
@@ -18,8 +20,10 @@ async function main() {
     },
   });
 
-  const idpUser = await prisma.user.create({
-    data: {
+  const idpUser = await prisma.user.upsert({
+    where: { username: 'idp_user' },
+    update: {},
+    create: {
       username: 'idp_user',
       password: await bcryptjs.hash('123456', 12),
       email: 'idp@dmm.gov.tr',
@@ -29,8 +33,10 @@ async function main() {
     },
   });
 
-  const legalUser = await prisma.user.create({
-    data: {
+  const legalUser = await prisma.user.upsert({
+    where: { username: 'legal_user' },
+    update: {},
+    create: {
       username: 'legal_user',
       password: await bcryptjs.hash('123456', 12),
       email: 'hukuk@dmm.gov.tr',
@@ -40,8 +46,10 @@ async function main() {
     },
   });
 
-  const institutionUser = await prisma.user.create({
-    data: {
+  const institutionUser = await prisma.user.upsert({
+    where: { username: 'kurum_user' },
+    update: {},
+    create: {
       username: 'kurum_user',
       password: await bcryptjs.hash('123456', 12),
       email: 'kurum@meb.gov.tr',

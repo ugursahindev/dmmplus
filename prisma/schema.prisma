@@ -16,7 +16,7 @@ model User {
   password    String
   email       String   @unique
   fullName    String
-  role        UserRole
+  role        String   // ADMIN, IDP_PERSONNEL, LEGAL_PERSONNEL, INSTITUTION_USER
   institution String?
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -56,12 +56,12 @@ model Case {
   caseNumber              String     @unique
   title                   String
   description             String
-  platform                Platform
-  priority                Priority
-  status                  CaseStatus @default(IDP_FORM)
+  platform                String     // TWITTER, FACEBOOK, INSTAGRAM, YOUTUBE, WHATSAPP, TELEGRAM, TIKTOK, OTHER
+  priority                String     // LOW, MEDIUM, HIGH, CRITICAL
+  status                  String     @default("IDP_FORM") // IDP_FORM, HUKUK_INCELEMESI, SON_KONTROL, RAPOR_URETIMI, KURUM_BEKLENIYOR, TAMAMLANDI
   tags                    String     @default("[]") // JSON stored as string
-  geographicScope         GeographicScope
-  sourceType              SourceType
+  geographicScope         String     // LOCAL, REGIONAL, NATIONAL, INTERNATIONAL
+  sourceType              String     // SOCIAL_MEDIA, NEWS_SITE, BLOG, FORUM, MESSAGING_APP, OTHER
   sourceUrl               String?
   
   // Additional news fields
@@ -142,8 +142,8 @@ model CaseHistory {
   caseId    Int
   userId    Int
   action    String
-  oldStatus CaseStatus
-  newStatus CaseStatus
+  oldStatus String     // CaseStatus values as string
+  newStatus String     // CaseStatus values as string
   notes     String?
   createdAt DateTime   @default(now())
 
@@ -156,8 +156,8 @@ model Task {
   id              Int        @id @default(autoincrement())
   title           String
   description     String
-  priority        Priority   @default(MEDIUM)
-  status          TaskStatus @default(PENDING)
+  priority        String     @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  status          String     @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
   assignedToId    Int
   assignedById    Int
   caseId          Int?
@@ -253,60 +253,11 @@ model MessageRead {
   @@index([messageId])
 }
 
-// Enums
-enum UserRole {
-  ADMIN @map("admin")
-  IDP_PERSONNEL @map("idp_personnel")
-  LEGAL_PERSONNEL @map("legal_personnel")
-  INSTITUTION_USER @map("institution_user")
-}
-
-enum CaseStatus {
-  IDP_FORM @map("idp_form")
-  HUKUK_INCELEMESI @map("hukuk_incelemesi")
-  SON_KONTROL @map("son_kontrol")
-  RAPOR_URETIMI @map("rapor_uretimi")
-  KURUM_BEKLENIYOR @map("kurum_bekleniyor")
-  TAMAMLANDI @map("tamamlandi")
-}
-
-enum Priority {
-  LOW @map("low")
-  MEDIUM @map("medium")
-  HIGH @map("high")
-  CRITICAL @map("critical")
-}
-
-enum Platform {
-  TWITTER @map("twitter")
-  FACEBOOK @map("facebook")
-  INSTAGRAM @map("instagram")
-  YOUTUBE @map("youtube")
-  WHATSAPP @map("whatsapp")
-  TELEGRAM @map("telegram")
-  TIKTOK @map("tiktok")
-  OTHER @map("other")
-}
-
-enum GeographicScope {
-  LOCAL @map("local")
-  REGIONAL @map("regional")
-  NATIONAL @map("national")
-  INTERNATIONAL @map("international")
-}
-
-enum SourceType {
-  SOCIAL_MEDIA @map("social_media")
-  NEWS_SITE @map("news_site")
-  BLOG @map("blog")
-  FORUM @map("forum")
-  MESSAGING_APP @map("messaging_app")
-  OTHER @map("other")
-}
-
-enum TaskStatus {
-  PENDING @map("pending")
-  IN_PROGRESS @map("in_progress")
-  COMPLETED @map("completed")
-  CANCELLED @map("cancelled")
-}
+// Enum values as constants (for reference)
+// UserRole: ADMIN, IDP_PERSONNEL, LEGAL_PERSONNEL, INSTITUTION_USER
+// CaseStatus: IDP_FORM, HUKUK_INCELEMESI, SON_KONTROL, RAPOR_URETIMI, KURUM_BEKLENIYOR, TAMAMLANDI
+// Priority: LOW, MEDIUM, HIGH, CRITICAL
+// Platform: TWITTER, FACEBOOK, INSTAGRAM, YOUTUBE, WHATSAPP, TELEGRAM, TIKTOK, OTHER
+// GeographicScope: LOCAL, REGIONAL, NATIONAL, INTERNATIONAL
+// SourceType: SOCIAL_MEDIA, NEWS_SITE, BLOG, FORUM, MESSAGING_APP, OTHER
+// TaskStatus: PENDING, IN_PROGRESS, COMPLETED, CANCELLED
