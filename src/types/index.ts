@@ -92,6 +92,9 @@ export interface Case {
   createdById: number;
   createdAt: Date;
   updatedAt: Date;
+  
+  // Relations
+  files?: CaseFile[];
 }
 
 export interface CaseFile {

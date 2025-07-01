@@ -24,8 +24,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { demoAPI, demoUsers } from '@/lib/demo-data';
 import { Case } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
 
 type CaseWithCreator = Case & {
   creator: {
@@ -81,6 +81,7 @@ const statusColors: Record<string, 'default' | 'primary' | 'secondary' | 'succes
 
 export default function CasesPage() {
   const router = useRouter();
+  const { user, token } = useAuth();
   const [cases, setCases] = useState<CaseWithCreator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -90,32 +91,48 @@ export default function CasesPage() {
   const [priorityFilter, setPriorityFilter] = useState('');
 
   useEffect(() => {
-    fetchCases();
-  }, [page, search, statusFilter, priorityFilter]);
+    if (token) {
+      fetchCases();
+    }
+  }, [page, search, statusFilter, priorityFilter, token]);
 
   const fetchCases = async () => {
     try {
       setIsLoading(true);
-      const params = {
-        page,
-        limit: 10,
-        search: search || undefined,
-        status: statusFilter || undefined,
-        priority: priorityFilter || undefined,
-      };
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '10',
+        ...(search && { search }),
+        ...(statusFilter && { status: statusFilter }),
+        ...(priorityFilter && { priority: priorityFilter }),
+      });
 
-      const response = await demoAPI.getCases(params);
-      const casesWithCreator = response.cases.map((c) => ({
+      const response = await fetch(`/api/cases?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Vakalar yüklenemedi');
+      }
+
+      const data = await response.json();
+      
+      // API'den gelen veriyi dönüştür
+      const casesWithCreator = data.cases.map((c: any) => ({
         ...c,
-        creator: demoUsers.find(u => u.id === c.createdById) || {
+        tags: typeof c.tags === 'string' ? JSON.parse(c.tags) : c.tags,
+        creator: c.creator || {
           id: 0,
           username: 'bilinmiyor',
           fullName: 'Bilinmiyor',
         },
         files: c.files || [],
       }));
+      
       setCases(casesWithCreator);
-      setTotalPages(response.totalPages);
+      setTotalPages(data.totalPages);
     } catch (error) {
       console.error('Failed to fetch cases:', error);
       toast.error('Vakalar yüklenirken hata oluştu');
@@ -130,7 +147,18 @@ export default function CasesPage() {
     }
 
     try {
-      await demoAPI.deleteCase(id);
+      const response = await fetch(`/api/cases/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Vaka silinirken hata oluştu');
+      }
+
       toast.success('Vaka başarıyla silindi');
       fetchCases();
     } catch (error: any) {
