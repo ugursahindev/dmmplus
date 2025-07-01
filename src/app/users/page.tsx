@@ -34,6 +34,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UserData {
   id: number;
@@ -67,6 +68,12 @@ const roleLabels: Record<string, string> = {
   IDP_PERSONNEL: 'İDP Personeli',
   LEGAL_PERSONNEL: 'Hukuk Personeli',
   INSTITUTION_USER: 'Kurum Kullanıcısı',
+  
+  idp_personnel: 'İDP Personeli',
+  legal_personnel: 'Hukuk Personeli',
+  institution_user: 'Kurum Kullanıcısı',
+
+  default: 'Bilinmeyen Rol', // Fallback label
 };
 
 const roleIcons: Record<string, any> = {
@@ -74,6 +81,7 @@ const roleIcons: Record<string, any> = {
   IDP_PERSONNEL: FileSearch,
   LEGAL_PERSONNEL: Gavel,
   INSTITUTION_USER: Building2,
+  default: Shield, // Fallback icon
 };
 
 const roleColors: Record<string, 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger'> = {
@@ -81,9 +89,11 @@ const roleColors: Record<string, 'default' | 'primary' | 'secondary' | 'success'
   IDP_PERSONNEL: 'primary',
   LEGAL_PERSONNEL: 'warning',
   INSTITUTION_USER: 'secondary',
+  default: 'default', // Fallback color
 };
 
 export default function UsersPage() {
+  const { token } = useAuth();
   const [users, setUsers] = useState<UserData[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -106,8 +116,10 @@ export default function UsersPage() {
   });
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (token && token.trim()) {
+      fetchUsers();
+    }
+  }, [token]);
 
   useEffect(() => {
     const filtered = users.filter(
@@ -121,15 +133,38 @@ export default function UsersPage() {
   }, [searchTerm, users]);
 
   const fetchUsers = async () => {
+    if (!token || !token.trim()) {
+      toast.error('Oturum bilgisi bulunamadı');
+      return;
+    }
+    
     try {
       setIsLoading(true);
-      const response = await fetch('/api/users');
+      const response = await fetch('/api/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
-          setUsers(data.data);
-          setFilteredUsers(data.data);
-        }
+        // API'den gelen veriyi UserData formatına dönüştür
+        const formattedUsers = (data.users || []).map((user: any) => ({
+          ...user,
+          role: user.role || 'default', // Fallback role
+          _count: user._count || {
+            createdCases: 0,
+            legalReviewedCases: 0,
+            finalReviewedCases: 0,
+            institutionResponses: 0,
+          }
+        }));
+        setUsers(formattedUsers);
+        setFilteredUsers(formattedUsers);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Kullanıcılar yüklenirken hata oluştu');
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
@@ -140,33 +175,71 @@ export default function UsersPage() {
   };
 
   const handleCreate = async () => {
+    if (!token || !token.trim()) {
+      toast.error('Oturum bilgisi bulunamadı');
+      return;
+    }
+    
+    // Form validasyonu
+    if (!formData.username || !formData.email || !formData.fullName || !formData.password || !formData.role) {
+      toast.error('Lütfen tüm gerekli alanları doldurun');
+      return;
+    }
+    
+    // Kurum kullanıcısı için kurum alanı zorunlu
+    if (formData.role === 'INSTITUTION_USER' && !formData.institution?.trim()) {
+      toast.error('Kurum kullanıcısı için kurum alanı zorunludur');
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/users', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
       });
+      
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
-          toast.success('Kullanıcı başarıyla oluşturuldu');
-          fetchUsers();
-          onCreateClose();
-          resetForm();
-        }
+        toast.success('Kullanıcı başarıyla oluşturuldu');
+        fetchUsers();
+        onCreateClose();
+        resetForm();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Kullanıcı oluşturulurken hata oluştu');
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Kullanıcı oluşturulurken hata oluştu');
+    } catch (error) {
+      console.error('Create user error:', error);
+      toast.error('Kullanıcı oluşturulurken hata oluştu');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleUpdate = async () => {
-    if (!selectedUser) return;
+    if (!token || !token.trim()) {
+      toast.error('Oturum bilgisi bulunamadı');
+      return;
+    }
+    
+    if (!selectedUser || !selectedUser.id) return;
+    
+    // Form validasyonu
+    if (!formData.username || !formData.email || !formData.fullName || !formData.role) {
+      toast.error('Lütfen tüm gerekli alanları doldurun');
+      return;
+    }
+    
+    // Kurum kullanıcısı için kurum alanı zorunlu
+    if (formData.role === 'INSTITUTION_USER' && !formData.institution?.trim()) {
+      toast.error('Kurum kullanıcısı için kurum alanı zorunludur');
+      return;
+    }
     
     setIsSubmitting(true);
     try {
@@ -178,59 +251,83 @@ export default function UsersPage() {
       const response = await fetch(`/api/users/${selectedUser.id}`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(updateData),
       });
+      
       if (response.ok) {
         toast.success('Kullanıcı başarıyla güncellendi');
         fetchUsers();
         onEditClose();
         resetForm();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Kullanıcı güncellenirken hata oluştu');
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Kullanıcı güncellenirken hata oluştu');
+    } catch (error) {
+      console.error('Update user error:', error);
+      toast.error('Kullanıcı güncellenirken hata oluştu');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!selectedUser) return;
+    if (!token || !token.trim()) {
+      toast.error('Oturum bilgisi bulunamadı');
+      return;
+    }
+    
+    if (!selectedUser || !selectedUser.id) return;
     
     setIsSubmitting(true);
     try {
       const response = await fetch(`/api/users/${selectedUser.id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
+      
       if (response.ok) {
         toast.success('Kullanıcı başarıyla silindi');
         fetchUsers();
         onDeleteClose();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Kullanıcı silinirken hata oluştu');
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Kullanıcı silinirken hata oluştu');
+    } catch (error) {
+      console.error('Delete user error:', error);
+      toast.error('Kullanıcı silinirken hata oluştu');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const openEditModal = (user: UserData) => {
-    setSelectedUser(user);
-    setFormData({
-      username: user.username,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role,
-      institution: user.institution || '',
-      active: user.active,
-    });
-    onEditOpen();
+    if (user && user.id) {
+      setSelectedUser(user);
+      setFormData({
+        username: user.username || '',
+        email: user.email || '',
+        fullName: user.fullName || '',
+        role: user.role || 'IDP_PERSONNEL',
+        institution: user.institution || '',
+        active: user.active !== undefined ? user.active : true,
+      });
+      onEditOpen();
+    }
   };
 
   const openDeleteModal = (user: UserData) => {
-    setSelectedUser(user);
-    onDeleteOpen();
+    if (user && user.id) {
+      setSelectedUser(user);
+      onDeleteOpen();
+    }
   };
 
   const resetForm = () => {
@@ -247,11 +344,12 @@ export default function UsersPage() {
   };
 
   const getTotalCases = (user: UserData) => {
+    const count = user._count || {};
     return (
-      user._count.createdCases +
-      user._count.legalReviewedCases +
-      user._count.finalReviewedCases +
-      user._count.institutionResponses
+      (count.createdCases || 0) +
+      (count.legalReviewedCases || 0) +
+      (count.finalReviewedCases || 0) +
+      (count.institutionResponses || 0)
     );
   };
 
@@ -270,30 +368,32 @@ export default function UsersPage() {
       case 'user':
         return (
           <User
-            name={item.fullName}
-            description={`@${item.username} • ${item.email}`}
+            name={item.fullName || 'İsimsiz Kullanıcı'}
+            description={`@${item.username || 'kullanici'} • ${item.email || 'email@example.com'}`}
             avatarProps={{
-              name: item.fullName.charAt(0),
-              color: roleColors[item.role],
+              name: (item.fullName || 'K').charAt(0),
+              color: roleColors[item.role] || roleColors.default,
             }}
           />
         );
 
       case 'role':
-        const RoleIcon = roleIcons[item.role];
+        const RoleIcon = roleIcons[item.role] || roleIcons.default;
+        const roleColor = roleColors[item.role] || roleColors.default;
+        const roleLabel = roleLabels[item.role] || roleLabels.default;
         return (
           <Chip
             startContent={<RoleIcon className="w-3 h-3" />}
-            color={roleColors[item.role]}
+            color={roleColor}
             variant="flat"
             size="sm"
           >
-            {roleLabels[item.role]}
+            {roleLabel}
           </Chip>
         );
 
       case 'institution':
-        return item.institution ? (
+        return item.institution && item.institution.trim() ? (
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-default-400" />
             <span className="text-sm">{item.institution}</span>
@@ -304,34 +404,44 @@ export default function UsersPage() {
 
       case 'cases':
         const total = getTotalCases(item);
+        const count = item._count || {};
         return (
           <div className="text-sm">
             <p className="font-medium">{total} toplam</p>
             <p className="text-xs text-default-400">
-              {item._count.createdCases > 0 && `${item._count.createdCases} oluşturdu`}
-              {item._count.legalReviewedCases > 0 && `, ${item._count.legalReviewedCases} inceledi`}
+              {count.createdCases > 0 && `${count.createdCases} oluşturdu`}
+              {count.legalReviewedCases > 0 && `, ${count.legalReviewedCases} inceledi`}
             </p>
           </div>
         );
 
       case 'status':
+        const isActive = item.active !== undefined ? item.active : true;
         return (
           <Chip
             size="sm"
             variant="dot"
-            color={item.active ? 'success' : 'danger'}
-            startContent={item.active ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+            color={isActive ? 'success' : 'danger'}
+            startContent={isActive ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
           >
-            {item.active ? 'Aktif' : 'Pasif'}
+            {isActive ? 'Aktif' : 'Pasif'}
           </Chip>
         );
 
       case 'date':
-        return (
-          <span className="text-sm">
-            {format(new Date(item.createdAt), 'dd MMM yyyy', { locale: tr })}
-          </span>
-        );
+        try {
+          return (
+            <span className="text-sm">
+              {format(new Date(item.createdAt), 'dd MMM yyyy', { locale: tr })}
+            </span>
+          );
+        } catch (error) {
+          return (
+            <span className="text-sm text-default-400">
+              Tarih belirtilmemiş
+            </span>
+          );
+        }
 
       case 'actions':
         return (
@@ -342,6 +452,7 @@ export default function UsersPage() {
                 size="sm"
                 variant="light"
                 onClick={() => openEditModal(item)}
+                isDisabled={!item.id}
               >
                 <Edit className="w-4 h-4" />
               </Button>
@@ -353,6 +464,7 @@ export default function UsersPage() {
                 variant="light"
                 color="danger"
                 onClick={() => openDeleteModal(item)}
+                isDisabled={!item.id}
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
