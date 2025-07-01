@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardBody, CardHeader, Input, Button, Divider } from '@nextui-org/react';
 import { Eye, EyeOff, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -11,6 +12,10 @@ export default function LoginPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const searchParams = useSearchParams();
+
+  // Get redirect URL from search params
+  const fromUrl = searchParams?.get('from');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +23,7 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      await login(username, password);
+      await login(username, password, fromUrl);
     } catch (error) {
       // Error is handled in the login function
     } finally {

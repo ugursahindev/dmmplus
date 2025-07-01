@@ -46,7 +46,7 @@ class ErrorBoundary extends Component<Props, State> {
                 {this.state.error?.message || 'Bilinmeyen hata'}
               </p>
               <button
-                onClick={() => window.location.reload()}
+                //onClick={() => window.location.reload()}
                 className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-600 transition-colors"
               >
                 Sayfayı Yenile

@@ -21,15 +21,37 @@ export async function withAuth(
   handler: (request: Request, user: JWTPayload) => Promise<NextResponse>
 ): Promise<NextResponse> {
   try {
-    const token = extractTokenFromHeader(request.headers.get('authorization') ?? undefined);
+    // Try to get token from Authorization header first
+    let token = extractTokenFromHeader(request.headers.get('authorization') ?? undefined);
+    let tokenSource = 'header';
+    
+    // If no token in header, try to get from cookie
+    if (!token) {
+      const cookieHeader = request.headers.get('cookie');
+      console.log('Cookie header:', cookieHeader);
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          acc[key] = value;
+          return acc;
+        }, {} as Record<string, string>);
+        console.log('Parsed cookies:', cookies);
+        token = cookies.token;
+        tokenSource = 'cookie';
+      }
+    }
+    
+    console.log('Token source:', tokenSource, 'Token exists:', !!token);
     
     if (!token) {
       return errorResponse('Authentication token required', 401);
     }
 
     const user = verifyToken(token);
+    console.log('Token verified successfully for user:', user.username);
     return await handler(request, user);
   } catch (error) {
+    console.error('withAuth error:', error);
     if (error instanceof Error && error.name === 'JsonWebTokenError') {
       return errorResponse('Invalid authentication token', 401);
     }

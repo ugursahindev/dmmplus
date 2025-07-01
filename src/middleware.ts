@@ -14,21 +14,28 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for authentication token
-  const token = request.cookies.get('token')?.value;
-
-  // For API routes, check authorization header
+  // For API routes, check authorization header OR cookie
   if (path.startsWith('/api/')) {
     const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const cookieToken = request.cookies.get('token')?.value;
+    
+    let apiToken = null;
+    
+    // Try Authorization header first, then cookie
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      apiToken = authHeader.substring(7);
+    } else if (cookieToken) {
+      apiToken = cookieToken;
+    }
+    
+    if (!apiToken) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       );
     }
     
-    // Verify the token in authorization header
-    const apiToken = authHeader.substring(7);
+    // Verify the token
     try {
       verifyToken(apiToken);
     } catch (error) {
@@ -39,6 +46,7 @@ export function middleware(request: NextRequest) {
     }
   } else {
     // For frontend routes, check cookie token
+    const token = request.cookies.get('token')?.value;
     if (!token) {
       const url = new URL('/login', request.url);
       url.searchParams.set('from', path);
@@ -77,16 +85,27 @@ export function middleware(request: NextRequest) {
   if (path.startsWith('/api/')) {
     const response = NextResponse.next();
     
-    // Configure CORS
-    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
+    // Allow all origins in development
     const origin = request.headers.get('origin');
     
-    if (origin && allowedOrigins.includes(origin)) {
-      response.headers.set('Access-Control-Allow-Origin', origin);
+    if (process.env.NODE_ENV === 'development') {
+      // Allow all localhost and 127.0.0.1 origins
+      if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+        response.headers.set('Access-Control-Allow-Origin', origin);
+      } else {
+        response.headers.set('Access-Control-Allow-Origin', '*');
+      }
+    } else {
+      // Production - more restrictive
+      const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+      if (origin && allowedOrigins.includes(origin)) {
+        response.headers.set('Access-Control-Allow-Origin', origin);
+      }
     }
     
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    response.headers.set('Access-Control-Allow-Headers', '*');
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
     response.headers.set('Access-Control-Max-Age', '86400');
     
     // Handle preflight requests

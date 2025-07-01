@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     // Set cookie for SSR
     response.cookies.set('token', token, {
-      httpOnly: true,
+      httpOnly: false, // Allow client-side access for debugging
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 8, // 8 hours
