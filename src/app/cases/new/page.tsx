@@ -17,8 +17,9 @@ import {
 import { ArrowLeft, Save, X, Upload, FileText, Image as ImageIcon } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { AIAssistant } from '@/components/AIAssistant';
-import axiosInstance from '@/lib/axios';
 import toast from 'react-hot-toast';
+import { demoAPI } from '@/lib/demo-data';
+import { useAuth } from '@/hooks/useAuth';
 
 const platforms = [
   { key: 'TWITTER', label: 'Twitter' },
@@ -66,6 +67,7 @@ const disinformationTypes = [
 
 export default function NewCasePage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -132,40 +134,26 @@ export default function NewCasePage() {
 
     setIsLoading(true);
     try {
-      // First create the case
+      // Create the case
       const caseData = {
         ...formData,
         description: formData.newsSummary, // Use news summary as description
+        createdById: user?.id || 1,
+        status: 'IDP_FORM' as const,
+        caseNumber: `DMM-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
+        tags: formData.tags,
+        geographicScope: formData.geographicScope as any,
+        sourceType: formData.sourceType as any,
+        platform: formData.platform as any,
+        priority: formData.priority as any,
       };
       
-      const response = await axiosInstance.post('/api/cases', caseData);
+      const newCase = await demoAPI.createCase(caseData);
       
-      if (response.data.success && selectedFiles.length > 0) {
-        // Upload files one by one
-        for (const file of selectedFiles) {
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('caseId', response.data.data.id);
-          
-          try {
-            await axiosInstance.post('/api/cases/upload', formData, {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-              },
-            });
-          } catch (uploadError) {
-            console.error('File upload error:', uploadError);
-            toast.error(`Dosya yüklenirken hata: ${file.name}`);
-          }
-        }
-      }
-      
-      if (response.data.success) {
-        toast.success('Vaka başarıyla oluşturuldu');
-        router.push(`/cases/${response.data.data.id}`);
-      }
+      toast.success('Vaka başarıyla oluşturuldu');
+      router.push(`/cases/${newCase.id}`);
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Vaka oluşturulurken hata oluştu');
+      toast.error(error.message || 'Vaka oluşturulurken hata oluştu');
     } finally {
       setIsLoading(false);
     }

@@ -19,9 +19,9 @@ import {
 import { Gavel, Eye, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import axiosInstance from '@/lib/axios';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { demoAPI } from '@/lib/demo-data';
 
 interface LegalCase {
   id: number;
@@ -85,23 +85,21 @@ export default function LegalPage() {
   const fetchCases = async () => {
     try {
       setIsLoading(true);
-      const response = await axiosInstance.get('/api/cases?limit=50');
-      if (response.data.success) {
-        const legalCases = response.data.data.cases;
-        setCases(legalCases);
-        
-        // Calculate stats
-        const pending = legalCases.filter((c: LegalCase) => c.status === 'HUKUK_INCELEMESI').length;
-        const approved = legalCases.filter((c: LegalCase) => c.legalApproved === true).length;
-        const rejected = legalCases.filter((c: LegalCase) => c.legalApproved === false).length;
-        
-        setStats({
-          pending,
-          approved,
-          rejected,
-          total: legalCases.length,
-        });
-      }
+      const response = await demoAPI.getCases({ limit: 50 });
+      const legalCases = response.cases;
+      setCases(legalCases);
+      
+      // Calculate stats
+      const pending = legalCases.filter((c: LegalCase) => c.status === 'HUKUK_INCELEMESI').length;
+      const approved = legalCases.filter((c: LegalCase) => c.legalApproved === true).length;
+      const rejected = legalCases.filter((c: LegalCase) => c.legalApproved === false).length;
+      
+      setStats({
+        pending,
+        approved,
+        rejected,
+        total: legalCases.length,
+      });
     } catch (error) {
       console.error('Failed to fetch legal cases:', error);
     } finally {

@@ -20,7 +20,6 @@ import {
   Globe, Database, Mail, Building2, Key
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import axiosInstance from '@/lib/axios';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 

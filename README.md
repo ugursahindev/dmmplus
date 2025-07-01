@@ -1,94 +1,130 @@
-# DMM - Dezinformasyonla Mücadele Merkezi
+# DMM Demo - Dezinformasyonla Mücadele Merkezi Demo Uygulaması
 
-DMM, dezenformasyon vakalarının sistematik olarak takip edildiği, 4 farklı kullanıcı tipinin belirli roller ve sorumluluklar çerçevesinde çalıştığı tam otomatik bir iş akışı sistemidir.
+Bu proje, Dezinformasyonla Mücadele Merkezi (DMM) sisteminin demo versiyonudur. Tüm veriler local storage'da saklanır ve herhangi bir backend sunucusu gerektirmez.
 
-## 🚀 Hızlı Başlangıç
+## 🚀 Özellikler
 
-1. **Projeyi başlatın:**
+- **Tamamen Frontend**: Backend API'si olmadan çalışır
+- **Local Storage**: Tüm veriler tarayıcıda saklanır
+- **Demo Veriler**: Gerçekçi demo vakalar ve kullanıcılar
+- **Responsive Tasarım**: Mobil ve masaüstü uyumlu
+- **Modern UI**: NextUI ve Tailwind CSS ile modern arayüz
+
+## 🛠️ Teknolojiler
+
+- **Next.js 15** - React framework
+- **TypeScript** - Tip güvenliği
+- **NextUI** - Modern UI bileşenleri
+- **Tailwind CSS** - Styling
+- **Framer Motion** - Animasyonlar
+- **React Hot Toast** - Bildirimler
+- **Date-fns** - Tarih işlemleri
+
+## 📦 Kurulum
+
+1. Projeyi klonlayın:
+```bash
+git clone <repository-url>
+cd dmm-demo
+```
+
+2. Bağımlılıkları yükleyin:
+```bash
+npm install
+```
+
+3. Geliştirme sunucusunu başlatın:
 ```bash
 npm run dev
 ```
 
-2. **Veritabanını başlatın (yeni terminal):**
-```bash
-npm run init-db
-```
-
-3. **Sisteme giriş yapın:**
-   - URL: http://localhost:3000
-   - Demo kullanıcılardan birini kullanın
+4. Tarayıcınızda [http://localhost:3000](http://localhost:3000) adresini açın.
 
 ## 👥 Demo Kullanıcılar
 
-| Rol | Kullanıcı Adı | Şifre | Yetkiler |
-|-----|---------------|-------|----------|
-| Admin | admin | 123456 | Tüm sistem yönetimi |
-| IDP Personeli | idp_user | 123456 | Vaka oluşturma, düzenleme, rapor üretimi |
-| Hukuk Personeli | legal_user | 123456 | Hukuki inceleme ve değerlendirme |
-| Kurum Sorumlusu | kurum_user | 123456 | Kurum yanıtları ve düzeltici bilgi |
+Sisteme giriş yapmak için aşağıdaki demo kullanıcıları kullanabilirsiniz:
 
-## 🔄 İş Akışı Aşamaları
+| Kullanıcı Adı | Şifre | Rol | Erişim |
+|---------------|-------|-----|--------|
+| `admin` | `admin123` | Sistem Yöneticisi | Tüm modüller |
+| `idp_user` | `idp123` | IDP Personeli | Vaka yönetimi, Dashboard |
+| `legal_user` | `legal123` | Hukuk Personeli | Hukuk incelemesi |
+| `institution_user` | `inst123` | Kurum Kullanıcısı | Kurum yanıtları |
 
-1. **IDP Formu** → Vaka oluşturma ve ilk değerlendirme
-2. **Hukuk İncelemesi** → Hukuki açıdan değerlendirme
-3. **Son Kontrol** → Final değişiklikleri ve onay
-4. **Rapor Üretimi** → İç ve dış rapor hazırlama
-5. **Kurum Bekleniyor** → Bakanlık/kurum yanıtı
-6. **Tamamlandı** → Vaka kapatma
-
-## 🛠 Teknoloji Stack
-
-- **Frontend:** Next.js 14, TypeScript, NextUI, TailwindCSS
-- **Backend:** Next.js API Routes, Sequelize ORM
-- **Database:** SQLite
-- **Authentication:** JWT
-- **File Upload:** Multer
-
-## 📊 Özellikler
-
-- ✅ Role-based access control (RBAC)
-- ✅ Gerçek zamanlı istatistikler
-- ✅ Gelişmiş filtreleme ve arama
-- ✅ Dosya yükleme sistemi
-- ✅ Vaka geçmişi takibi
-- ✅ Otomatik vaka numarası üretimi
-- ✅ Responsive tasarım
-
-## 📁 Proje Yapısı
+## 🏗️ Proje Yapısı
 
 ```
-dmm+/
-├── src/
-│   ├── app/           # Next.js app directory
-│   ├── components/    # React components
-│   ├── lib/          # Database and auth utilities
-│   ├── types/        # TypeScript type definitions
-│   └── utils/        # Helper functions
-├── public/           # Static files
-└── dmm.db           # SQLite database
+src/
+├── app/                    # Next.js App Router
+│   ├── cases/             # Vaka yönetimi sayfaları
+│   ├── dashboard/         # Dashboard sayfası
+│   ├── login/             # Giriş sayfası
+│   ├── legal/             # Hukuk modülü
+│   ├── institution/       # Kurum modülü
+│   └── layout.tsx         # Ana layout
+├── components/            # React bileşenleri
+│   ├── layout/           # Layout bileşenleri
+│   └── cases/            # Vaka bileşenleri
+├── hooks/                # Custom React hooks
+├── lib/                  # Yardımcı kütüphaneler
+│   └── demo-data.ts      # Demo veri yönetimi
+└── types/                # TypeScript tip tanımları
 ```
 
-## 🔐 Güvenlik
+## 🔧 Demo Veri Yönetimi
 
-- JWT token authentication (8 saat geçerlilik)
-- Bcrypt password hashing
-- Role-based route protection
-- SQL injection koruması
+Tüm veriler `src/lib/demo-data.ts` dosyasında yönetilir:
 
-## 💡 Kullanım İpuçları
+- **Demo Kullanıcılar**: Sistem kullanıcıları
+- **Demo Vakalar**: Örnek dezenformasyon vakaları
+- **Local Storage**: Verilerin tarayıcıda saklanması
+- **Demo API**: Backend API'sini simüle eden fonksiyonlar
 
-1. Veritabanını sıfırlamak için Dashboard'da sağ üstteki "Veritabanını Sıfırla" linkine tıklayın
-2. Her kullanıcı tipi sadece yetkili olduğu sayfaları görebilir
-3. Vaka durumları otomatik olarak iş akışına göre ilerler
+## 📊 Vaka Durumları
 
-## 🚦 Durum Renkleri
+Sistemde vakalar aşağıdaki durumlardan geçer:
 
-- **Gri:** IDP Formu (Başlangıç)
-- **Mavi:** Hukuk İncelemesi
-- **Mor:** Son Kontrol
-- **Sarı:** Rapor Üretimi / Kurum Bekleniyor
-- **Yeşil:** Tamamlandı
+1. **IDP Formu** - İlk değerlendirme
+2. **Hukuk İncelemesi** - Yasal değerlendirme
+3. **Son Kontrol** - Final kontrol
+4. **Rapor Üretimi** - Rapor hazırlama
+5. **Kurum Bekleniyor** - Kurum yanıtı bekleniyor
+6. **Tamamlandı** - Vaka tamamlandı
 
-## 📝 Lisans
+## 🎨 Özelleştirme
 
-Bu proje DMM tarafından geliştirilmiştir.
+### Demo Verileri Değiştirme
+
+`src/lib/demo-data.ts` dosyasında demo kullanıcıları ve vakaları değiştirebilirsiniz.
+
+### Stil Değişiklikleri
+
+- **Tailwind CSS**: `tailwind.config.js` dosyasında tema ayarları
+- **NextUI**: `src/app/providers.tsx` dosyasında tema konfigürasyonu
+
+## 🚀 Production Build
+
+Production için build almak:
+
+```bash
+npm run build
+npm start
+```
+
+## 📝 Notlar
+
+- Bu bir demo uygulamasıdır, production kullanımı için backend entegrasyonu gerekir
+- Tüm veriler local storage'da saklanır, tarayıcı verilerini temizlediğinizde sıfırlanır
+- Demo verilerini sıfırlamak için Dashboard'daki "Demo Verilerini Sıfırla" butonunu kullanın
+
+## 🤝 Katkıda Bulunma
+
+1. Fork yapın
+2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
+3. Commit yapın (`git commit -m 'Add amazing feature'`)
+4. Push yapın (`git push origin feature/amazing-feature`)
+5. Pull Request oluşturun
+
+## 📄 Lisans
+
+Bu proje MIT lisansı altında lisanslanmıştır.

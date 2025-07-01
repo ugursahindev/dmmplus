@@ -21,10 +21,10 @@ import {
 import { Building2, Eye, MessageSquare, Clock, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import axiosInstance from '@/lib/axios';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
+import { demoAPI } from '@/lib/demo-data';
 
 interface InstitutionCase {
   id: number;
@@ -82,32 +82,30 @@ export default function InstitutionPage() {
   const fetchCases = async () => {
     try {
       setIsLoading(true);
-      const response = await axiosInstance.get('/api/cases?limit=50');
-      if (response.data.success) {
-        const institutionCases = response.data.data.cases;
-        
-        // For institution users, filter by their ministry and show only relevant statuses
-        const filteredCases = user?.role === 'INSTITUTION_USER' && user?.institution
-          ? institutionCases.filter((c: InstitutionCase) => 
-              c.targetMinistry === user.institution && 
-              ['KURUM_BEKLENIYOR', 'TAMAMLANDI'].includes(c.status)
-            )
-          : institutionCases.filter((c: InstitutionCase) => 
-              ['KURUM_BEKLENIYOR', 'TAMAMLANDI'].includes(c.status)
-            );
-        
-        setCases(filteredCases);
-        
-        // Calculate stats
-        const pending = filteredCases.filter((c: InstitutionCase) => !c.institutionResponse).length;
-        const responded = filteredCases.filter((c: InstitutionCase) => c.institutionResponse).length;
-        
-        setStats({
-          pending,
-          responded,
-          total: filteredCases.length,
-        });
-      }
+      const response = await demoAPI.getCases({ limit: 50 });
+      const institutionCases = response.cases;
+      
+      // For institution users, filter by their ministry and show only relevant statuses
+      const filteredCases = user?.role === 'INSTITUTION_USER' && user?.institution
+        ? institutionCases.filter((c: InstitutionCase) => 
+            c.targetMinistry === user.institution && 
+            ['KURUM_BEKLENIYOR', 'TAMAMLANDI'].includes(c.status)
+          )
+        : institutionCases.filter((c: InstitutionCase) => 
+            ['KURUM_BEKLENIYOR', 'TAMAMLANDI'].includes(c.status)
+          );
+      
+      setCases(filteredCases);
+      
+      // Calculate stats
+      const pending = filteredCases.filter((c: InstitutionCase) => !c.institutionResponse).length;
+      const responded = filteredCases.filter((c: InstitutionCase) => c.institutionResponse).length;
+      
+      setStats({
+        pending,
+        responded,
+        total: filteredCases.length,
+      });
     } catch (error) {
       console.error('Failed to fetch institution cases:', error);
     } finally {

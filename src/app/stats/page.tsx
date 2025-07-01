@@ -21,9 +21,9 @@ import {
   Clock, Users, Calendar, Globe, Zap
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import axiosInstance from '@/lib/axios';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { demoAPI } from '@/lib/demo-data';
 
 interface StatsData {
   summary: {
@@ -74,13 +74,8 @@ export default function StatsPage() {
   const fetchStats = async () => {
     try {
       setIsLoading(true);
-      const [casesRes, usersRes] = await Promise.all([
-        axiosInstance.get('/api/cases?limit=1000'),
-        axiosInstance.get('/api/users')
-      ]);
-
-      const cases = casesRes.data.data.cases;
-      const users = usersRes.data.data;
+      const casesRes = await demoAPI.getCases({ limit: 1000 });
+      const cases = casesRes.cases;
 
       // Summary stats
       const summary = {

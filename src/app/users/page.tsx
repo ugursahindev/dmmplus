@@ -31,7 +31,6 @@ import {
   Building2, Gavel, FileSearch, CheckCircle, XCircle 
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import axiosInstance from '@/lib/axios';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -124,10 +123,13 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      const response = await axiosInstance.get('/api/users');
-      if (response.data.success) {
-        setUsers(response.data.data);
-        setFilteredUsers(response.data.data);
+      const response = await fetch('/api/users');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setUsers(data.data);
+          setFilteredUsers(data.data);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
@@ -140,12 +142,21 @@ export default function UsersPage() {
   const handleCreate = async () => {
     setIsSubmitting(true);
     try {
-      const response = await axiosInstance.post('/api/users', formData);
-      if (response.data.success) {
-        toast.success('Kullanıcı başarıyla oluşturuldu');
-        fetchUsers();
-        onCreateClose();
-        resetForm();
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          toast.success('Kullanıcı başarıyla oluşturuldu');
+          fetchUsers();
+          onCreateClose();
+          resetForm();
+        }
       }
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Kullanıcı oluşturulurken hata oluştu');
@@ -164,8 +175,14 @@ export default function UsersPage() {
         delete updateData.password;
       }
       
-      const response = await axiosInstance.put(`/api/users/${selectedUser.id}`, updateData);
-      if (response.data.success) {
+      const response = await fetch(`/api/users/${selectedUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+      if (response.ok) {
         toast.success('Kullanıcı başarıyla güncellendi');
         fetchUsers();
         onEditClose();
@@ -183,8 +200,10 @@ export default function UsersPage() {
     
     setIsSubmitting(true);
     try {
-      const response = await axiosInstance.delete(`/api/users/${selectedUser.id}`);
-      if (response.data.success) {
+      const response = await fetch(`/api/users/${selectedUser.id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
         toast.success('Kullanıcı başarıyla silindi');
         fetchUsers();
         onDeleteClose();

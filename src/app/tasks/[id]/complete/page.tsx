@@ -13,7 +13,6 @@ import {
 import { ArrowLeft, CheckCircle, Save } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
-import axiosInstance from '@/lib/axios';
 import toast from 'react-hot-toast';
 
 interface Task {
@@ -47,8 +46,8 @@ export default function CompleteTaskPage({ params }: { params: Promise<{ id: str
   const fetchTask = async (taskId: string) => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/api/tasks/${taskId}`);
-      const taskData = response.data.task;
+      const response = await fetch(`/api/tasks/${taskId}`);
+      const taskData = await response.json();
       
       // Check if user is the assignee
       if (taskData.assignedTo.id !== user?.id) {
@@ -79,14 +78,25 @@ export default function CompleteTaskPage({ params }: { params: Promise<{ id: str
 
     setSubmitting(true);
     try {
-      await axiosInstance.patch(`/api/tasks/${task.id}`, {
-        status: 'COMPLETED',
-        feedback: feedback.trim() || null
+      const response = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: 'COMPLETED',
+          feedback: feedback.trim() || null
+        })
       });
 
-      toast.success('Görev başarıyla tamamlandı');
-      const { id } = await params;
-      router.push(`/tasks/${id}`);
+      if (response.ok) {
+        toast.success('Görev başarıyla tamamlandı');
+        const { id } = await params;
+        router.push(`/tasks/${id}`);
+      } else {
+        console.error('Error completing task:', response.statusText);
+        toast.error('Görev tamamlanırken hata oluştu');
+      }
     } catch (error) {
       console.error('Error completing task:', error);
       toast.error('Görev tamamlanırken hata oluştu');

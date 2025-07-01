@@ -32,7 +32,6 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
-import axiosInstance from '@/lib/axios';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -155,8 +154,9 @@ export default function MessagesPage() {
 
   const fetchConversations = async () => {
     try {
-      const response = await axiosInstance.get('/api/messages/conversations');
-      setConversations(response.data.conversations);
+      const response = await fetch('/api/messages/conversations');
+      const data = await response.json();
+      setConversations(data.conversations);
     } catch (error) {
       console.error('Error fetching conversations:', error);
       toast.error('Konuşmalar yüklenirken hata oluştu');
@@ -167,8 +167,9 @@ export default function MessagesPage() {
 
   const fetchMessages = async (conversationId: number, silent = false) => {
     try {
-      const response = await axiosInstance.get(`/api/messages/conversations/${conversationId}`);
-      const conv = response.data.conversation;
+      const response = await fetch(`/api/messages/conversations/${conversationId}`);
+      const data = await response.json();
+      const conv = data.conversation;
       setMessages(conv.messages);
       
       // Update conversation in list
@@ -186,8 +187,9 @@ export default function MessagesPage() {
   const fetchUsers = async (search: string) => {
     try {
       setSearchingUsers(true);
-      const response = await axiosInstance.get(`/api/messages/users?search=${search}`);
-      setUsers(response.data.users);
+      const response = await fetch(`/api/messages/users?search=${search}`);
+      const data = await response.json();
+      setUsers(data.users);
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
@@ -200,12 +202,19 @@ export default function MessagesPage() {
 
     setSendingMessage(true);
     try {
-      const response = await axiosInstance.post('/api/messages/send', {
-        conversationId: selectedConversation.id,
-        content: newMessage
+      const response = await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          conversationId: selectedConversation.id,
+          content: newMessage
+        }),
       });
 
-      setMessages([...messages, response.data.message]);
+      const data = await response.json();
+      setMessages([...messages, data.message]);
       setNewMessage('');
       
       // Update last message in conversation list
@@ -229,17 +238,23 @@ export default function MessagesPage() {
     }
 
     try {
-      const response = await axiosInstance.post('/api/messages/conversations', {
-        participantIds: selectedUsers
+      const response = await fetch('/api/messages/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participantIds: selectedUsers
+        }),
       });
 
-      const conversation = response.data.conversation;
+      const data = await response.json();
       
-      if (!response.data.existing) {
-        setConversations([conversation, ...conversations]);
+      if (!data.existing) {
+        setConversations([data.conversation, ...conversations]);
       }
       
-      setSelectedConversation(conversation);
+      setSelectedConversation(data.conversation);
       setSelectedUsers([]);
       onClose();
     } catch (error) {

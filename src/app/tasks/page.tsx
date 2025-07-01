@@ -50,7 +50,6 @@ import {
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
-import axiosInstance from '@/lib/axios';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -125,8 +124,9 @@ export default function TasksPage() {
       if (viewMode === 'assignedToMe') params.append('assignedToMe', 'true');
       if (viewMode === 'createdByMe') params.append('createdByMe', 'true');
 
-      const response = await axiosInstance.get(`/api/tasks?${params.toString()}`);
-      setTasks(response.data.tasks);
+      const response = await fetch(`/api/tasks?${params.toString()}`);
+      const data = await response.json();
+      setTasks(data.tasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
       toast.error('Görevler yüklenirken hata oluştu');
@@ -137,7 +137,13 @@ export default function TasksPage() {
 
   const handleStatusUpdate = async (taskId: number, newStatus: string) => {
     try {
-      await axiosInstance.patch(`/api/tasks/${taskId}`, { status: newStatus });
+      await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
       toast.success('Görev durumu güncellendi');
       fetchTasks();
     } catch (error) {

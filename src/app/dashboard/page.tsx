@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardBody, CardHeader, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner } from '@nextui-org/react';
-import { FileText, Clock, CheckCircle, AlertCircle, TrendingUp, BarChart3 } from 'lucide-react';
+import { Card, CardBody, CardHeader, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner, Button } from '@nextui-org/react';
+import { FileText, Clock, CheckCircle, AlertCircle, TrendingUp, BarChart3, RefreshCw } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import StatsCard from '@/components/cases/StatsCard';
-import axiosInstance from '@/lib/axios';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { demoAPI, storage } from '@/lib/demo-data';
 
 interface Stats {
   summary: {
@@ -62,28 +62,29 @@ export default function DashboardPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await axiosInstance.get('/api/stats');
-      if (response.data.success) {
-        setStats(response.data.data);
-      }
+      setIsLoading(true);
+      const data = await demoAPI.getStats();
+      setStats(data);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+      toast.error('İstatistikler yüklenirken hata oluştu');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const resetDatabase = async () => {
-    if (!confirm('Veritabanını sıfırlamak istediğinizden emin misiniz? Tüm veriler silinecek.')) {
+  const resetDemoData = async () => {
+    if (!confirm('Demo verilerini sıfırlamak istediğinizden emin misiniz? Tüm değişiklikler silinecek.')) {
       return;
     }
     
     try {
-      // Prisma reset komutu için bir script çalıştırabiliriz
-      // Ancak production'da bu tehlikeli olabilir
-      toast.error('Bu özellik şu anda devre dışı');
+      storage.resetDemoData();
+      toast.success('Demo verileri sıfırlandı');
+      fetchStats();
     } catch (error) {
-      console.error('Failed to reset database:', error);
+      console.error('Failed to reset demo data:', error);
+      toast.error('Demo verileri sıfırlanırken hata oluştu');
     }
   };
 
@@ -92,7 +93,14 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          {/* Veritabanı sıfırlama butonu güvenlik nedeniyle kaldırıldı */}
+          <Button
+            color="secondary"
+            variant="flat"
+            startContent={<RefreshCw className="w-4 h-4" />}
+            onClick={resetDemoData}
+          >
+            Demo Verilerini Sıfırla
+          </Button>
         </div>
 
         {isLoading ? (

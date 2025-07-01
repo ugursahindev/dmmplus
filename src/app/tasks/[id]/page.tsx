@@ -38,7 +38,6 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
-import axiosInstance from '@/lib/axios';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
@@ -124,8 +123,9 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const fetchTask = async (taskId: string) => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/api/tasks/${taskId}`);
-      setTask(response.data.task);
+      const response = await fetch(`/api/tasks/${taskId}`);
+      const data = await response.json();
+      setTask(data.task);
     } catch (error: any) {
       console.error('Error fetching task:', error);
       if (error.response?.status === 404) {
@@ -154,7 +154,13 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         data.feedback = completionFeedback;
       }
 
-      await axiosInstance.patch(`/api/tasks/${task.id}`, data);
+      await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
       toast.success('Görev durumu güncellendi');
       const { id } = await params;
       fetchTask(id);
@@ -172,8 +178,14 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
     setSubmittingComment(true);
     try {
-      await axiosInstance.post(`/api/tasks/${task.id}/comments`, {
-        comment: newComment
+      await fetch(`/api/tasks/${task.id}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          comment: newComment
+        }),
       });
       toast.success('Yorum eklendi');
       setNewComment('');

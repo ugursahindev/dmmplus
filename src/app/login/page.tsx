@@ -37,9 +37,9 @@ export default function LoginPage() {
         <CardHeader className="flex flex-col gap-1 items-center pt-6">
           <div className="flex items-center gap-2 mb-2">
             <Shield className="w-8 h-8 text-primary" />
-            <h1 className="text-2xl font-bold">DMM</h1>
+            <h1 className="text-2xl font-bold">DMM Demo</h1>
           </div>
-          <p className="text-sm text-default-500">Dezinformasyonla Mücadele Merkezi</p>
+          <p className="text-sm text-default-500">Dezinformasyonla Mücadele Merkezi - Demo Uygulaması</p>
         </CardHeader>
         <Divider />
         <CardBody className="py-8 px-6">
@@ -64,6 +64,7 @@ export default function LoginPage() {
                   onClick={() => setIsVisible(!isVisible)}
                   className="focus:outline-none"
                 >
+                  
                   {isVisible ? (
                     <EyeOff className="w-4 h-4 text-default-400" />
                   ) : (
@@ -90,10 +91,10 @@ export default function LoginPage() {
           <div className="space-y-2 text-sm text-default-500">
             <p className="font-semibold">Demo Kullanıcılar:</p>
             <ul className="space-y-1 ml-4">
-              <li>• Admin: admin / 123456</li>
-              <li>• IDP Personeli: idp_user / 123456</li>
-              <li>• Hukuk Personeli: legal_user / 123456</li>
-              <li>• Kurum Sorumlusu: kurum_user / 123456</li>
+              <li>• Admin: admin / admin123</li>
+              <li>• IDP Personeli: idp_user / idp123</li>
+              <li>• Hukuk Personeli: legal_user / legal123</li>
+              <li>• Kurum Kullanıcısı: institution_user / inst123</li>
             </ul>
           </div>
         </CardBody>

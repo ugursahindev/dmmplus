@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Button, Card, CardBody, Chip, Textarea, Progress } from '@nextui-org/react';
 import { Sparkles, Tag, AlertTriangle, FileText } from 'lucide-react';
-import axiosInstance from '@/lib/axios';
 
 interface AIAssistantProps {
   onSummaryGenerated?: (summary: string) => void;

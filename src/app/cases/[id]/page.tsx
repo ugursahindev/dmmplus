@@ -40,12 +40,11 @@ import {
   Download
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import axiosInstance from '@/lib/axios';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
-import { canEditCase } from '@/lib/auth';
+import { demoAPI } from '@/lib/demo-data';
 
 interface CaseDetail {
   id: number;
@@ -135,10 +134,20 @@ export default function CaseDetailPage() {
 
   const fetchCase = async () => {
     try {
-      const response = await axiosInstance.get(`/api/cases/${params.id}`);
-      if (response.data.success) {
-        setCaseData(response.data.data);
-      }
+      const caseData = await demoAPI.getCase(Number(params.id));
+      // Convert Case to CaseDetail format
+      const caseDetail: CaseDetail = {
+        ...caseData,
+        createdAt: caseData.createdAt.toISOString(),
+        updatedAt: caseData.updatedAt.toISOString(),
+        creator: { id: caseData.createdById, fullName: 'Demo User', username: 'demo' },
+        files: [],
+        history: [],
+        legalReviewer: caseData.legalReviewerId ? { id: caseData.legalReviewerId, fullName: 'Legal User', username: 'legal' } : undefined,
+        finalReviewer: caseData.finalReviewerId ? { id: caseData.finalReviewerId, fullName: 'Final User', username: 'final' } : undefined,
+        institutionResponder: caseData.institutionResponderId ? { id: caseData.institutionResponderId, fullName: 'Institution User', username: 'institution' } : undefined,
+      };
+      setCaseData(caseDetail);
     } catch (error) {
       console.error('Failed to fetch case:', error);
       toast.error('Vaka yüklenirken hata oluştu');
@@ -210,15 +219,13 @@ export default function CaseDetailPage() {
       }, {});
       
       console.log('Sending update payload:', updatePayload);
-      const response = await axiosInstance.put(`/api/cases/${params.id}`, updatePayload);
-      if (response.data.success) {
-        toast.success('İşlem başarıyla tamamlandı');
-        fetchCase();
-        onClose();
-      }
+      await demoAPI.updateCase(Number(params.id), updatePayload);
+      toast.success('İşlem başarıyla tamamlandı');
+      fetchCase();
+      onClose();
     } catch (error: any) {
       console.error('Update error:', error);
-      toast.error(error.response?.data?.error || 'İşlem sırasında hata oluştu');
+      toast.error(error.message || 'İşlem sırasında hata oluştu');
     } finally {
       setIsSubmitting(false);
     }
@@ -238,7 +245,7 @@ export default function CaseDetailPage() {
     return null;
   }
 
-  const canEdit = canEditCase(user.role, caseData.status);
+  const canEdit = user.role === 'ADMIN' || user.role === 'IDP_PERSONNEL';
   const StatusIcon = statusIcons[caseData.status] || FileText;
 
   return (

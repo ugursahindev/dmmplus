@@ -21,33 +21,20 @@ import {
 import { Plus, Search, Eye, Edit, Trash2, Filter } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import axiosInstance from '@/lib/axios';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { demoAPI, demoUsers } from '@/lib/demo-data';
+import { Case } from '@/types';
 
-interface Case {
-  id: number;
-  caseNumber: string;
-  title: string;
-  description: string;
-  platform: string;
-  priority: string;
-  status: string;
-  tags: string[];
-  sourceUrl?: string;
-  createdAt: string;
+type CaseWithCreator = Case & {
   creator: {
     id: number;
     username: string;
     fullName: string;
   };
-  files: Array<{
-    id: number;
-    fileName: string;
-    fileType: string;
-  }>;
-}
+  files: any[];
+};
 
 const statusLabels: Record<string, string> = {
   IDP_FORM: 'IDP Formu',
@@ -94,7 +81,7 @@ const statusColors: Record<string, 'default' | 'primary' | 'secondary' | 'succes
 
 export default function CasesPage() {
   const router = useRouter();
-  const [cases, setCases] = useState<Case[]>([]);
+  const [cases, setCases] = useState<CaseWithCreator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -109,20 +96,26 @@ export default function CasesPage() {
   const fetchCases = async () => {
     try {
       setIsLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '10',
-      });
-      
-      if (search) params.append('search', search);
-      if (statusFilter) params.append('status', statusFilter);
-      if (priorityFilter) params.append('priority', priorityFilter);
+      const params = {
+        page,
+        limit: 10,
+        search: search || undefined,
+        status: statusFilter || undefined,
+        priority: priorityFilter || undefined,
+      };
 
-      const response = await axiosInstance.get(`/api/cases?${params}`);
-      if (response.data.success) {
-        setCases(response.data.data.cases);
-        setTotalPages(response.data.data.totalPages);
-      }
+      const response = await demoAPI.getCases(params);
+      const casesWithCreator = response.cases.map((c) => ({
+        ...c,
+        creator: demoUsers.find(u => u.id === c.createdById) || {
+          id: 0,
+          username: 'bilinmiyor',
+          fullName: 'Bilinmiyor',
+        },
+        files: c.files || [],
+      }));
+      setCases(casesWithCreator);
+      setTotalPages(response.totalPages);
     } catch (error) {
       console.error('Failed to fetch cases:', error);
       toast.error('Vakalar yüklenirken hata oluştu');
@@ -137,13 +130,11 @@ export default function CasesPage() {
     }
 
     try {
-      const response = await axiosInstance.delete(`/api/cases/${id}`);
-      if (response.data.success) {
-        toast.success('Vaka başarıyla silindi');
-        fetchCases();
-      }
+      await demoAPI.deleteCase(id);
+      toast.success('Vaka başarıyla silindi');
+      fetchCases();
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Vaka silinirken hata oluştu');
+      toast.error(error.message || 'Vaka silinirken hata oluştu');
     }
   };
 
@@ -158,7 +149,7 @@ export default function CasesPage() {
     { key: 'actions', label: 'İŞLEMLER' },
   ];
 
-  const renderCell = (item: Case, columnKey: string) => {
+  const renderCell = (item: CaseWithCreator, columnKey: string) => {
     switch (columnKey) {
       case 'caseNumber':
         return <span className="font-mono text-sm">{item.caseNumber}</span>;
@@ -185,7 +176,7 @@ export default function CasesPage() {
                 </div>
               );
             })()}
-            {item.files && item.files.length > 0 && (
+            {item.files?.length > 0 && (
               <Chip size="sm" variant="flat" color="primary" className="ml-2">
                 📎 {item.files.length}
               </Chip>
@@ -222,11 +213,11 @@ export default function CasesPage() {
       case 'creator':
         return (
           <User
-            name={item.creator.fullName}
-            description={item.creator.username}
+            name={item.creator?.fullName || 'Bilinmiyor'}
+            description={item.creator?.username || ''}
             avatarProps={{
               size: 'sm',
-              name: item.creator.fullName.charAt(0),
+              name: item.creator?.fullName?.charAt(0) || '?',
             }}
           />
         );
@@ -311,11 +302,12 @@ export default function CasesPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <SelectItem key="all" value="">Tümü</SelectItem>
-            <SelectItem key="OPEN" value="OPEN">Açık</SelectItem>
-            <SelectItem key="UNDER_REVIEW" value="UNDER_REVIEW">İnceleniyor</SelectItem>
-            <SelectItem key="VERIFIED" value="VERIFIED">Doğrulandı</SelectItem>
-            <SelectItem key="FALSE_POSITIVE" value="FALSE_POSITIVE">Yanlış Pozitif</SelectItem>
-            <SelectItem key="CLOSED" value="CLOSED">Kapalı</SelectItem>
+            <SelectItem key="IDP_FORM" value="IDP_FORM">IDP Formu</SelectItem>
+            <SelectItem key="HUKUK_INCELEMESI" value="HUKUK_INCELEMESI">Hukuk İncelemesi</SelectItem>
+            <SelectItem key="SON_KONTROL" value="SON_KONTROL">Son Kontrol</SelectItem>
+            <SelectItem key="RAPOR_URETIMI" value="RAPOR_URETIMI">Rapor Üretimi</SelectItem>
+            <SelectItem key="KURUM_BEKLENIYOR" value="KURUM_BEKLENIYOR">Kurum Bekleniyor</SelectItem>
+            <SelectItem key="TAMAMLANDI" value="TAMAMLANDI">Tamamlandı</SelectItem>
           </Select>
           <Select
             className="max-w-xs"

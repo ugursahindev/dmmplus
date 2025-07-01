@@ -2,9 +2,9 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import axiosInstance from '@/lib/axios';
 import toast from 'react-hot-toast';
 import { User, UserRole } from '@/types';
+import { demoAPI, storage } from '@/lib/demo-data';
 
 interface AuthContextType {
   user: User | null;
@@ -24,143 +24,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const checkAuth = useCallback(async () => {
-    try {
-      const response = await axiosInstance.get('/api/auth/me');
-      console.log('checkAuth response:', response);
-      
-      if (response.data.success) {
-        setUser(response.data.data);
-      } else {
-        throw new Error('Auth check failed');
-      }
-    } catch (error) {
-      console.error('checkAuth error:', error);
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        // Clear cookie by setting it to expire
-        document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-      }
-      // Clear axios default headers
-      delete axiosInstance.defaults.headers.common['Authorization'];
-      setUser(null);
-      setToken(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Initialize auth state from localStorage - only run once
-  useEffect(() => {
-    const performAuthCheck = async () => {
-      try {
-        const response = await axiosInstance.get('/api/auth/me');
-        if (response.data.success) {
-          setUser(response.data.data);
-        } else {
-          throw new Error('Auth check failed');
-        }
-      } catch (error) {
-        console.error('Initial auth check error:', error);
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('token');
-          // Clear cookie by setting it to expire
-          document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-        }
-        // Clear axios default headers
-        delete axiosInstance.defaults.headers.common['Authorization'];
-        setUser(null);
-        setToken(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const savedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const savedToken = storage.getToken();
     if (savedToken) {
       setToken(savedToken);
-      // Set the token in axios headers immediately
-      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
-      // Call auth check to get user data
-      performAuthCheck();
-    } else {
-      setIsLoading(false);
+      
+      try {
+        const userData = await demoAPI.getCurrentUser();
+        setUser(userData);
+      } catch (error) {
+        console.error('checkAuth error:', error);
+        storage.setToken(null);
+        storage.setCurrentUser(null);
+        setUser(null);
+        setToken(null);
+      }
     }
-  }, []); // Empty dependency array - only run once on mount
+    setIsLoading(false);
+  }, []);
+
+  // Initialize auth state from localStorage
+  useEffect(() => {
+    const savedToken = storage.getToken();
+    const savedUser = storage.getCurrentUser();
+    
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      setUser(savedUser);
+    }
+    
+    setIsLoading(false);
+  }, []);
 
   const login = async (username: string, password: string, fromUrl?: string | null) => {
     try {
-      const response = await axiosInstance.post('/api/auth/login', { username, password });
-      if (response.data.success) {
-        const { token: newToken, user: userData } = response.data.data;
-        
-        // Set both localStorage and cookie
-        localStorage.setItem('token', newToken);
-        
-        // Manually set cookie for immediate availability with correct security settings
-        const secureFlag = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-        document.cookie = `token=${newToken}; path=/; max-age=${60 * 60 * 8}; SameSite=Lax${secureFlag}`;
-        
-        // Also set the token in axios default headers immediately
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-        
-        setToken(newToken);
-        setUser(userData);
-        setIsLoading(false);
-        
-        // Debug: Check if cookie was set correctly
-        setTimeout(() => {
-          const cookieValue = document.cookie.split(';').find(c => c.trim().startsWith('token='));
-          console.log('Cookie after login:', cookieValue);
-          console.log('All cookies:', document.cookie);
-        }, 100);
-        
-        toast.success('Giriş başarılı!');
-        
-        // Use fromUrl if provided, otherwise determine by role
-        let redirectPath = fromUrl;
-        
-        if (!redirectPath || redirectPath === '/login') {
-          redirectPath = (() => {
-            switch (userData.role) {
-              case 'ADMIN':
-              case 'IDP_PERSONNEL':
-                return '/dashboard';
-              case 'LEGAL_PERSONNEL':
-                return '/legal';
-              case 'INSTITUTION_USER':
-                return '/institution';
-              default:
-                return '/dashboard';
-            }
-          })();
-        }
-        
-        console.log('Redirecting to:', redirectPath, 'User role:', userData.role);
-        
-        // Use window.location for guaranteed navigation
-        window.location.href = redirectPath as string;
+      const { user: userData, token: newToken } = await demoAPI.login(username, password);
+      
+      setToken(newToken);
+      setUser(userData);
+      setIsLoading(false);
+      
+      toast.success('Giriş başarılı!');
+      
+      // Use fromUrl if provided, otherwise determine by role
+      let redirectPath = fromUrl;
+      
+      if (!redirectPath || redirectPath === '/login') {
+        redirectPath = (() => {
+          switch (userData.role) {
+            case 'ADMIN':
+            case 'IDP_PERSONNEL':
+              return '/dashboard';
+            case 'LEGAL_PERSONNEL':
+              return '/legal';
+            case 'INSTITUTION_USER':
+              return '/institution';
+            default:
+              return '/dashboard';
+          }
+        })();
       }
+      
+      console.log('Redirecting to:', redirectPath, 'User role:', userData.role);
+      
+      // Use window.location for guaranteed navigation
+      window.location.href = redirectPath as string;
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Giriş başarısız');
+      toast.error(error.message || 'Giriş başarısız');
       throw error;
     }
   };
 
   const logout = async () => {
     try {
-      await axiosInstance.post('/api/auth/logout');
+      await demoAPI.logout();
     } catch (error) {
       // Continue with logout even if API call fails
     }
-    
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      // Clear cookie by setting it to expire
-      document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    }
-    
-    // Clear axios default headers
-    delete axiosInstance.defaults.headers.common['Authorization'];
     
     setUser(null);
     setToken(null);
