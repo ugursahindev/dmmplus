@@ -25,6 +25,7 @@ import {
   Select,
   SelectItem,
   Switch,
+  Pagination,
 } from '@nextui-org/react';
 import { 
   Search, UserPlus, Edit, Trash2, Shield, 
@@ -63,6 +64,15 @@ interface UserFormData {
   active: boolean;
 }
 
+interface PaginationData {
+  currentPage: number;
+  totalPages: number;
+  totalUsers: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+  limit: number;
+}
+
 const roleLabels: Record<string, string> = {
   ADMIN: 'Yönetici',
   IDP_PERSONNEL: 'İDP Personeli',
@@ -95,11 +105,16 @@ const roleColors: Record<string, 'default' | 'primary' | 'secondary' | 'success'
 export default function UsersPage() {
   const { token } = useAuth();
   const [users, setUsers] = useState<UserData[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Sayfalama state'leri
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [limit] = useState(20); // Sayfa başına 20 kullanıcı
   
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
@@ -119,18 +134,7 @@ export default function UsersPage() {
     if (token && token.trim()) {
       fetchUsers();
     }
-  }, [token]);
-
-  useEffect(() => {
-    const filtered = users.filter(
-      (user) =>
-        user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (user.institution && user.institution.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-    setFilteredUsers(filtered);
-  }, [searchTerm, users]);
+  }, [token, page, searchTerm]);
 
   const fetchUsers = async () => {
     if (!token || !token.trim()) {
@@ -140,7 +144,18 @@ export default function UsersPage() {
     
     try {
       setIsLoading(true);
-      const response = await fetch('/api/users', {
+      
+      // API çağrısına sayfalama ve arama parametrelerini ekle
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+      
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
+      
+      const response = await fetch(`/api/users?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -161,7 +176,12 @@ export default function UsersPage() {
           }
         }));
         setUsers(formattedUsers);
-        setFilteredUsers(formattedUsers);
+        
+        // Sayfalama bilgilerini güncelle
+        if (data.pagination) {
+          setTotalPages(data.pagination.totalPages);
+          setTotalUsers(data.pagination.totalUsers);
+        }
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || 'Kullanıcılar yüklenirken hata oluştu');
@@ -172,6 +192,12 @@ export default function UsersPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Arama değiştiğinde sayfa 1'e döndür
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setPage(1);
   };
 
   const handleCreate = async () => {
@@ -497,7 +523,7 @@ export default function UsersPage() {
             <Input
               placeholder="Kullanıcı ara..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               startContent={<Search className="w-4 h-4 text-default-400" />}
               className="max-w-md"
             />
@@ -517,7 +543,7 @@ export default function UsersPage() {
               )}
             </TableHeader>
             <TableBody
-              items={filteredUsers}
+              items={users}
               emptyContent="Kullanıcı bulunamadı"
             >
               {(item) => (
@@ -530,6 +556,18 @@ export default function UsersPage() {
             </TableBody>
           </Table>
         )}
+
+        {/* Pagination */}
+        <div className="flex justify-between items-center mt-4">
+          <div className="text-sm text-default-500">
+            Toplam {totalUsers} kullanıcı • Sayfa {page} / {totalPages}
+          </div>
+          <Pagination
+            total={totalPages}
+            current={page}
+            onChange={(newPage) => setPage(newPage)}
+          />
+        </div>
 
         {/* Create Modal */}
         <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="lg">

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     // Query parametrelerini al
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = parseInt(searchParams.get('limit') || '20'); // Varsayılan limit'i 20'ye çıkar
     const role = searchParams.get('role');
     const active = searchParams.get('active');
     const search = searchParams.get('search');
