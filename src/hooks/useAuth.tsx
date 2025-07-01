@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { User, UserRole } from '@/types';
 import { api } from '@/lib/api';
+import { log } from 'console';
 
 interface AuthContextType {
   user: User | null;
@@ -162,10 +163,15 @@ export function useRequireAuth(allowedRoles?: UserRole[]) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
+  console.log('user role:', user?.role);
+  console.log('allowedRoles:', allowedRoles);
+
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/login');
     } else if (!isLoading && user && allowedRoles && !allowedRoles.includes(user.role)) {
+
+      
       router.push('/unauthorized');
     }
   }, [user, isLoading, allowedRoles, router]);
