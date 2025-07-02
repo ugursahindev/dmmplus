@@ -19,6 +19,7 @@ import { ArrowLeft, Save, X } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { api } from '@/lib/api';
 
 const platforms = [
   { key: 'TWITTER', label: 'Twitter' },
@@ -73,7 +74,7 @@ interface CaseData {
 export default function EditCasePage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [tagInput, setTagInput] = useState('');
@@ -97,30 +98,27 @@ export default function EditCasePage() {
 
   const fetchCase = async () => {
     try {
-      const response = await axiosInstance.get(`/api/cases/${params.id}`);
-      if (response.data.success) {
-        const data = response.data.data;
-        setCaseData(data);
-        
-        // Parse tags if needed
-        const tags = typeof data.tags === 'string' ? JSON.parse(data.tags) : data.tags;
-        
-        setFormData({
-          title: data.title,
-          description: data.description,
-          platform: data.platform,
-          priority: data.priority,
-          geographicScope: data.geographicScope,
-          sourceType: data.sourceType,
-          sourceUrl: data.sourceUrl || '',
-          idpAssessment: data.idpAssessment || '',
-          idpNotes: data.idpNotes || '',
-          tags: tags || [],
-        });
-      }
-    } catch (error) {
+      const data = await api.getCase(token!, Number(params.id));
+      setCaseData(data as CaseData);
+      
+      // Parse tags if needed
+      const tags = typeof data.tags === 'string' ? JSON.parse(data.tags) : data.tags;
+      
+      setFormData({
+        title: data.title,
+        description: data.description,
+        platform: data.platform,
+        priority: data.priority,
+        geographicScope: data.geographicScope,
+        sourceType: data.sourceType,
+        sourceUrl: data.sourceUrl || '',
+        idpAssessment: data.idpAssessment || '',
+        idpNotes: data.idpNotes || '',
+        tags: tags || [],
+      });
+    } catch (error: any) {
       console.error('Failed to fetch case:', error);
-      toast.error('Vaka yüklenirken hata oluştu');
+      toast.error(error.message || 'Vaka yüklenirken hata oluştu');
       router.push('/cases');
     } finally {
       setIsLoading(false);
@@ -137,17 +135,15 @@ export default function EditCasePage() {
 
     setIsSaving(true);
     try {
-      const response = await axiosInstance.put(`/api/cases/${params.id}`, {
+      await api.updateCase(token!, Number(params.id), {
         ...formData,
         tags: formData.tags, // API will handle the JSON conversion
       });
       
-      if (response.data.success) {
-        toast.success('Vaka başarıyla güncellendi');
-        router.push(`/cases/${params.id}`);
-      }
+      toast.success('Vaka başarıyla güncellendi');
+      router.push(`/cases/${params.id}`);
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Vaka güncellenirken hata oluştu');
+      toast.error(error.message || 'Vaka güncellenirken hata oluştu');
     } finally {
       setIsSaving(false);
     }

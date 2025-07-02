@@ -44,7 +44,7 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
-import { demoAPI } from '@/lib/demo-data';
+import { api } from '@/lib/api';
 
 interface CaseDetail {
   id: number;
@@ -119,7 +119,7 @@ const priorityLabels: Record<string, string> = {
 export default function CaseDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [caseData, setCaseData] = useState<CaseDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -134,23 +134,11 @@ export default function CaseDetailPage() {
 
   const fetchCase = async () => {
     try {
-      const caseData = await demoAPI.getCase(Number(params.id));
-      // Convert Case to CaseDetail format
-      const caseDetail: CaseDetail = {
-        ...caseData,
-        createdAt: caseData.createdAt.toISOString(),
-        updatedAt: caseData.updatedAt.toISOString(),
-        creator: { id: caseData.createdById, fullName: 'Demo User', username: 'demo' },
-        files: [],
-        history: [],
-        legalReviewer: caseData.legalReviewerId ? { id: caseData.legalReviewerId, fullName: 'Legal User', username: 'legal' } : undefined,
-        finalReviewer: caseData.finalReviewerId ? { id: caseData.finalReviewerId, fullName: 'Final User', username: 'final' } : undefined,
-        institutionResponder: caseData.institutionResponderId ? { id: caseData.institutionResponderId, fullName: 'Institution User', username: 'institution' } : undefined,
-      };
-      setCaseData(caseDetail);
-    } catch (error) {
+      const caseData = await api.getCase(token!, Number(params.id));
+      setCaseData(caseData as unknown as CaseDetail);
+    } catch (error: any) {
       console.error('Failed to fetch case:', error);
-      toast.error('Vaka yüklenirken hata oluştu');
+      toast.error(error.message || 'Vaka yüklenirken hata oluştu');
       router.push('/cases');
     } finally {
       setIsLoading(false);
@@ -219,7 +207,7 @@ export default function CaseDetailPage() {
       }, {});
       
       console.log('Sending update payload:', updatePayload);
-      await demoAPI.updateCase(Number(params.id), updatePayload);
+      await api.updateCase(token!, Number(params.id), updatePayload);
       toast.success('İşlem başarıyla tamamlandı');
       fetchCase();
       onClose();

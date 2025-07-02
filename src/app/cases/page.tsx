@@ -26,6 +26,7 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Case } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
+import { api } from '@/lib/api';
 
 type CaseWithCreator = Case & {
   creator: {
@@ -99,28 +100,18 @@ export default function CasesPage() {
   const fetchCases = async () => {
     try {
       setIsLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '10',
-        ...(search && { search }),
-        ...(statusFilter && { status: statusFilter }),
-        ...(priorityFilter && { priority: priorityFilter }),
-      });
-
-      const response = await fetch(`/api/cases?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Vakalar yüklenemedi');
-      }
-
-      const data = await response.json();
+      
+      const response = await api.getCases(
+        token!,
+        page,
+        10,
+        search || undefined,
+        statusFilter || undefined,
+        priorityFilter || undefined
+      );
       
       // API'den gelen veriyi dönüştür
-      const casesWithCreator = data.cases.map((c: any) => ({
+      const casesWithCreator = response.cases.map((c: any) => ({
         ...c,
         tags: typeof c.tags === 'string' ? JSON.parse(c.tags) : c.tags,
         creator: c.creator || {
@@ -132,10 +123,10 @@ export default function CasesPage() {
       }));
       
       setCases(casesWithCreator);
-      setTotalPages(data.totalPages);
-    } catch (error) {
+      setTotalPages(response.totalPages);
+    } catch (error: any) {
       console.error('Failed to fetch cases:', error);
-      toast.error('Vakalar yüklenirken hata oluştu');
+      toast.error(error.message || 'Vakalar yüklenirken hata oluştu');
     } finally {
       setIsLoading(false);
     }
@@ -147,18 +138,7 @@ export default function CasesPage() {
     }
 
     try {
-      const response = await fetch(`/api/cases/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Vaka silinirken hata oluştu');
-      }
-
+      await api.deleteCase(token!, id);
       toast.success('Vaka başarıyla silindi');
       fetchCases();
     } catch (error: any) {

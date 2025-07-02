@@ -18,8 +18,8 @@ import { ArrowLeft, Save, X, Upload, FileText, Image as ImageIcon } from 'lucide
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { AIAssistant } from '@/components/AIAssistant';
 import toast from 'react-hot-toast';
-import { demoAPI } from '@/lib/demo-data';
 import { useAuth } from '@/hooks/useAuth';
+import { api } from '@/lib/api';
 
 const platforms = [
   { key: 'TWITTER', label: 'Twitter' },
@@ -67,7 +67,7 @@ const disinformationTypes = [
 
 export default function NewCasePage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -148,10 +148,10 @@ export default function NewCasePage() {
         priority: formData.priority as any,
       };
       
-      const newCase = await demoAPI.createCase(caseData);
+      const response = await api.createCase(token!, caseData);
       
       toast.success('Vaka başarıyla oluşturuldu');
-      router.push(`/cases/${newCase.id}`);
+      router.push(`/cases/${response.case.id}`);
     } catch (error: any) {
       toast.error(error.message || 'Vaka oluşturulurken hata oluştu');
     } finally {
