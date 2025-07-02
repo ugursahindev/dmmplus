@@ -24,7 +24,6 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
-import { demoAPI } from '@/lib/demo-data';
 
 interface InstitutionCase {
   id: number;
@@ -66,7 +65,7 @@ const priorityLabels: Record<string, string> = {
 
 export default function InstitutionPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [cases, setCases] = useState<InstitutionCase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -76,14 +75,28 @@ export default function InstitutionPage() {
   });
 
   useEffect(() => {
-    fetchCases();
-  }, []);
+    if (token) {
+      fetchCases();
+    }
+  }, [token]);
 
   const fetchCases = async () => {
     try {
       setIsLoading(true);
-      const response = await demoAPI.getCases({ limit: 50 });
-      const institutionCases = response.cases;
+      
+      const response = await fetch('/api/cases?limit=50', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Vakalar yüklenemedi');
+      }
+
+      const data = await response.json();
+      const institutionCases = data.cases || [];
       
       // For institution users, filter by their ministry and show only relevant statuses
       const filteredCases = user?.role === 'INSTITUTION_USER' && user?.institution
