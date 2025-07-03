@@ -96,7 +96,7 @@ interface UserData {
 }
 
 export default function MessagesPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -112,13 +112,15 @@ export default function MessagesPage() {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    fetchConversations();
+    if (token) {
+      fetchConversations();
+    }
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     if (selectedConversation) {
@@ -130,6 +132,9 @@ export default function MessagesPage() {
       pollingIntervalRef.current = setInterval(() => {
         fetchMessages(selectedConversation.id, true);
       }, 3000);
+      
+      // Mark messages as read when conversation is selected
+      markMessagesAsRead();
     } else {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
@@ -154,7 +159,20 @@ export default function MessagesPage() {
 
   const fetchConversations = async () => {
     try {
-      const response = await fetch('/api/messages/conversations');
+      if (!token) {
+        throw new Error('No authentication token');
+      }
+      
+      const response = await fetch('/api/messages/conversations', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch conversations');
+      }
+      
       const data = await response.json();
       setConversations(data.conversations);
     } catch (error) {
@@ -167,7 +185,20 @@ export default function MessagesPage() {
 
   const fetchMessages = async (conversationId: number, silent = false) => {
     try {
-      const response = await fetch(`/api/messages/conversations/${conversationId}`);
+      if (!token) {
+        throw new Error('No authentication token');
+      }
+      
+      const response = await fetch(`/api/messages/conversations/${conversationId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch messages');
+      }
+      
       const data = await response.json();
       const conv = data.conversation;
       setMessages(conv.messages);
@@ -187,7 +218,20 @@ export default function MessagesPage() {
   const fetchUsers = async (search: string) => {
     try {
       setSearchingUsers(true);
-      const response = await fetch(`/api/messages/users?search=${search}`);
+      if (!token) {
+        throw new Error('No authentication token');
+      }
+      
+      const response = await fetch(`/api/messages/users?search=${search}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      
       const data = await response.json();
       setUsers(data.users);
     } catch (error) {
@@ -202,16 +246,25 @@ export default function MessagesPage() {
 
     setSendingMessage(true);
     try {
+      if (!token) {
+        throw new Error('No authentication token');
+      }
+      
       const response = await fetch('/api/messages/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           conversationId: selectedConversation.id,
           content: newMessage
         }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
 
       const data = await response.json();
       setMessages([...messages, data.message]);
@@ -238,15 +291,24 @@ export default function MessagesPage() {
     }
 
     try {
+      if (!token) {
+        throw new Error('No authentication token');
+      }
+      
       const response = await fetch('/api/messages/conversations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           participantIds: selectedUsers
         }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to create conversation');
+      }
 
       const data = await response.json();
       
@@ -260,6 +322,47 @@ export default function MessagesPage() {
     } catch (error) {
       console.error('Error creating conversation:', error);
       toast.error('Konuşma oluşturulurken hata oluştu');
+    }
+  };
+
+  const markMessagesAsRead = async () => {
+    if (!selectedConversation || !user) return;
+
+    try {
+      const unreadMessages = messages.filter(
+        message => message.sender.id !== user.id && 
+        !message.readBy.some(read => read.user.id === user.id)
+      );
+
+      if (unreadMessages.length === 0) return;
+
+      if (!token) {
+        throw new Error('No authentication token');
+      }
+      
+      const response = await fetch('/api/messages/read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          messageIds: unreadMessages.map(m => m.id),
+          conversationId: selectedConversation.id,
+        }),
+      });
+
+      if (response.ok) {
+        // Update messages to mark them as read
+        setMessages(prev => prev.map(message => ({
+          ...message,
+          readBy: unreadMessages.some(m => m.id === message.id) 
+            ? [...message.readBy, { id: 0, user: { id: user.id, fullName: user.fullName } }]
+            : message.readBy
+        })));
+      }
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
     }
   };
 
