@@ -265,7 +265,6 @@ export default function TasksPage() {
     { key: 'status', label: 'DURUM' },
     { key: 'priority', label: 'ÖNCELİK' },
     { key: 'dueDate', label: 'SON TARİH' },
-    { key: 'case', label: 'VAKA' },
     { key: 'actions', label: 'İŞLEMLER' },
   ];
 
@@ -342,17 +341,7 @@ export default function TasksPage() {
           <span className="text-sm text-default-400">Belirtilmemiş</span>
         );
       
-      case 'case':
-        return item.case ? (
-          <Tooltip content={item.case.title}>
-            <Chip size="sm" variant="bordered" className="cursor-pointer">
-              {item.case.caseNumber}
-            </Chip>
-          </Tooltip>
-        ) : (
-          <span className="text-sm text-default-400">Vaka yok</span>
-        );
-      
+
       case 'actions':
         return (
           <div className="flex items-center gap-2">
