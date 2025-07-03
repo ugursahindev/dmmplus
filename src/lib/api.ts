@@ -20,6 +20,91 @@ export interface CasesResponse {
   limit: number;
 }
 
+export interface TasksResponse {
+  tasks: Task[];
+  totalPages: number;
+  currentPage: number;
+  totalTasks: number;
+  limit: number;
+}
+
+export interface TaskStats {
+  overview: {
+    totalTasks: number;
+    recentTasks: number;
+    recentCompletedTasks: number;
+    overdueTasks: number;
+    dueThisWeek: number;
+    averageCompletionDays: number;
+  };
+  statusDistribution: Record<string, number>;
+  priorityDistribution: Record<string, number>;
+  userDistribution?: Array<{
+    assignedToId: number;
+    _count: { assignedToId: number };
+    user: {
+      id: number;
+      username: string;
+      fullName: string;
+      role: string;
+    };
+  }>;
+}
+
+export interface Task {
+  id: number;
+  title: string;
+  description: string;
+  priority: string;
+  status: string;
+  assignedToId: number;
+  assignedById: number;
+  caseId?: number;
+  dueDate?: string;
+  completedAt?: string;
+  feedback?: string;
+  createdAt: string;
+  updatedAt: string;
+  assignedTo: {
+    id: number;
+    username: string;
+    fullName: string;
+  };
+  assignedBy: {
+    id: number;
+    username: string;
+    fullName: string;
+  };
+  case?: {
+    id: number;
+    caseNumber: string;
+    title: string;
+  };
+  _count: {
+    comments: number;
+  };
+}
+
+export interface CreateTaskData {
+  title: string;
+  description: string;
+  priority?: string;
+  assignedToId: number;
+  caseId?: number;
+  dueDate?: string;
+}
+
+export interface UpdateTaskData {
+  title?: string;
+  description?: string;
+  priority?: string;
+  status?: string;
+  assignedToId?: number;
+  caseId?: number;
+  dueDate?: string;
+  feedback?: string;
+}
+
 export interface CreateCaseData {
   caseNumber: string;
   title: string;
@@ -226,6 +311,136 @@ export const api = {
 
     if (!response.ok) {
       throw new Error(data.error || 'Vaka silinemedi');
+    }
+
+    return data;
+  },
+
+  // Get tasks with pagination and filters
+  getTasks: async (
+    token: string,
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    status?: string,
+    priority?: string,
+    assignedTo?: string,
+    assignedBy?: string,
+    caseId?: string
+  ): Promise<TasksResponse> => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(search && { search }),
+      ...(status && { status }),
+      ...(priority && { priority }),
+      ...(assignedTo && { assignedTo }),
+      ...(assignedBy && { assignedBy }),
+      ...(caseId && { caseId }),
+    });
+
+    const response = await fetch(`${API_BASE_URL}/api/tasks?${params}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Görevler yüklenemedi');
+    }
+
+    return data;
+  },
+
+  // Get single task by ID
+  getTask: async (token: string, taskId: number): Promise<{ task: Task }> => {
+    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Görev detayları yüklenemedi');
+    }
+
+    return data;
+  },
+
+  // Create new task
+  createTask: async (token: string, taskData: CreateTaskData): Promise<{ message: string; task: Task }> => {
+    const response = await fetch(`${API_BASE_URL}/api/tasks`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(taskData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Görev oluşturulamadı');
+    }
+
+    return data;
+  },
+
+  // Update task
+  updateTask: async (token: string, taskId: number, taskData: UpdateTaskData): Promise<{ message: string; task: Task }> => {
+    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(taskData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Görev güncellenemedi');
+    }
+
+    return data;
+  },
+
+  // Delete task
+  deleteTask: async (token: string, taskId: number): Promise<{ message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Görev silinemedi');
+    }
+
+    return data;
+  },
+
+  // Get task statistics
+  getTaskStats: async (token: string): Promise<TaskStats> => {
+    const response = await fetch(`${API_BASE_URL}/api/tasks/stats`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Görev istatistikleri yüklenemedi');
     }
 
     return data;
