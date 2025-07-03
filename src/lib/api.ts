@@ -154,6 +154,30 @@ export interface UpdateCaseData {
   recommendationDMK?: string;
 }
 
+export interface TaskComment {
+  id: number;
+  comment: string;
+  createdAt: string;
+  user: {
+    id: number;
+    username: string;
+    fullName: string;
+    role: string;
+  };
+}
+
+export interface TaskCommentsResponse {
+  comments: TaskComment[];
+  totalPages: number;
+  currentPage: number;
+  totalComments: number;
+  limit: number;
+}
+
+export interface CreateTaskCommentData {
+  comment: string;
+}
+
 export const api = {
   // Login
   login: async (username: string, password: string): Promise<LoginResponse> => {
@@ -441,6 +465,57 @@ export const api = {
 
     if (!response.ok) {
       throw new Error(data.error || 'Görev istatistikleri yüklenemedi');
+    }
+
+    return data;
+  },
+
+  // Get task comments
+  getTaskComments: async (
+    token: string,
+    taskId: number,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<TaskCommentsResponse> => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/comments?${params}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Görev yorumları yüklenemedi');
+    }
+
+    return data;
+  },
+
+  // Create task comment
+  createTaskComment: async (
+    token: string,
+    taskId: number,
+    commentData: CreateTaskCommentData
+  ): Promise<{ message: string; comment: TaskComment }> => {
+    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/comments`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(commentData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Yorum eklenemedi');
     }
 
     return data;

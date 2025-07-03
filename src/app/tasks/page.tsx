@@ -26,16 +26,18 @@ import {
   ModalBody,
   ModalFooter,
   Textarea,
-  useDisclosure
+  useDisclosure,
+  Divider,
+  Avatar
 } from '@nextui-org/react';
-import { Plus, Search, Eye, Edit, Trash2, Filter, Calendar, MessageSquare, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, Filter, Calendar, MessageSquare, CheckCircle, Clock, AlertCircle, Send } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import StatsCard from '@/components/cases/StatsCard';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { Task, TaskStats, CreateTaskData, UpdateTaskData } from '@/lib/api';
+import { Task, TaskStats, CreateTaskData, UpdateTaskData, TaskComment, CreateTaskCommentData } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
 
@@ -86,6 +88,7 @@ export default function TasksPage() {
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure();
+  const { isOpen: isCommentsOpen, onOpen: onCommentsOpen, onClose: onCommentsClose } = useDisclosure();
   
   // Form states
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -97,6 +100,13 @@ export default function TasksPage() {
     caseId: undefined,
     dueDate: '',
   });
+
+  // Comments states
+  const [comments, setComments] = useState<TaskComment[]>([]);
+  const [commentsPage, setCommentsPage] = useState(1);
+  const [commentsTotalPages, setCommentsTotalPages] = useState(1);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
 
   useEffect(() => {
     if (token) {
@@ -213,6 +223,41 @@ export default function TasksPage() {
     onViewOpen();
   };
 
+  const openCommentsModal = async (task: Task) => {
+    setSelectedTask(task);
+    setCommentsPage(1);
+    onCommentsOpen();
+    await fetchComments(task.id, 1);
+  };
+
+  const fetchComments = async (taskId: number, page: number = 1) => {
+    try {
+      setIsLoadingComments(true);
+      const response = await api.getTaskComments(token!, taskId, page);
+      setComments(response.comments);
+      setCommentsTotalPages(response.totalPages);
+      setCommentsPage(page);
+    } catch (error: any) {
+      console.error('Failed to fetch comments:', error);
+      toast.error(error.message || 'Yorumlar yüklenirken hata oluştu');
+    } finally {
+      setIsLoadingComments(false);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!selectedTask || !newComment.trim()) return;
+
+    try {
+      await api.createTaskComment(token!, selectedTask.id, { comment: newComment.trim() });
+      toast.success('Yorum başarıyla eklendi');
+      setNewComment('');
+      await fetchComments(selectedTask.id, commentsPage);
+    } catch (error: any) {
+      toast.error(error.message || 'Yorum eklenirken hata oluştu');
+    }
+  };
+
   const columns = [
     { key: 'title', label: 'BAŞLIK' },
     { key: 'assignedTo', label: 'ATANAN' },
@@ -224,7 +269,7 @@ export default function TasksPage() {
     { key: 'actions', label: 'İŞLEMLER' },
   ];
 
-  const renderCell = (item: Task, columnKey: string) => {
+  const renderCell = (item: Task, columnKey: React.Key) => {
     switch (columnKey) {
       case 'title':
         return (
@@ -311,6 +356,16 @@ export default function TasksPage() {
       case 'actions':
         return (
           <div className="flex items-center gap-2">
+            <Tooltip content="Yorumlar">
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                onPress={() => openCommentsModal(item)}
+              >
+                <MessageSquare className="w-4 h-4" />
+              </Button>
+            </Tooltip>
             <Tooltip content="Görüntüle">
               <Button
                 isIconOnly
@@ -519,7 +574,7 @@ export default function TasksPage() {
               <div className="grid grid-cols-2 gap-4">
                 <Select
                   label="Öncelik"
-                  selectedKeys={[formData.priority]}
+                  selectedKeys={formData.priority ? [formData.priority] : []}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                 >
                   {Object.entries(priorityLabels).map(([key, label]) => (
@@ -588,7 +643,7 @@ export default function TasksPage() {
               <div className="grid grid-cols-2 gap-4">
                 <Select
                   label="Öncelik"
-                  selectedKeys={[formData.priority]}
+                  selectedKeys={formData.priority ? [formData.priority] : []}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                 >
                   {Object.entries(priorityLabels).map(([key, label]) => (
@@ -741,6 +796,108 @@ export default function TasksPage() {
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onViewClose}>
+              Kapat
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Comments Modal */}
+      <Modal isOpen={isCommentsOpen} onClose={onCommentsClose} size="3xl">
+        <ModalContent>
+          <ModalHeader>
+            <div className="w-full">
+              <h3 className="text-lg font-semibold">Görev Yorumları</h3>
+              {selectedTask && (
+                <p className="text-sm text-default-500 mt-1">{selectedTask.title}</p>
+              )}
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            {selectedTask && (
+              <div className="space-y-4">
+                {/* Add Comment Section */}
+                <div className="space-y-2">
+                  <Textarea
+                    label="Yeni Yorum"
+                    placeholder="Yorumunuzu yazın..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    minRows={2}
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      color="primary"
+                      startContent={<Send className="w-4 h-4" />}
+                      onPress={handleAddComment}
+                      isDisabled={!newComment.trim()}
+                    >
+                      Yorum Ekle
+                    </Button>
+                  </div>
+                </div>
+
+                <Divider />
+
+                {/* Comments List */}
+                <div className="space-y-4">
+                  <h4 className="font-medium">Yorumlar</h4>
+                  
+                  {isLoadingComments ? (
+                    <div className="flex justify-center py-8">
+                      <Spinner size="lg" />
+                    </div>
+                  ) : comments.length === 0 ? (
+                    <div className="text-center py-8 text-default-500">
+                      Henüz yorum bulunmuyor.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-4 max-h-96 overflow-y-auto">
+                        {comments.map((comment) => (
+                          <div key={comment.id} className="flex gap-3 p-3 bg-default-50 rounded-lg">
+                            <Avatar
+                              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.user.username}`}
+                              name={comment.user.fullName}
+                              size="sm"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm">{comment.user.fullName}</span>
+                                <Chip size="sm" variant="flat" color="primary">
+                                  {comment.user.role}
+                                </Chip>
+                                <span className="text-xs text-default-400">
+                                  {format(new Date(comment.createdAt), 'dd MMM yyyy HH:mm', { locale: tr })}
+                                </span>
+                              </div>
+                              <p className="text-sm text-default-700 whitespace-pre-wrap">
+                                {comment.comment}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {commentsTotalPages > 1 && (
+                        <div className="flex justify-center mt-4">
+                          <Pagination
+                            total={commentsTotalPages}
+                            page={commentsPage}
+                            onChange={(page) => fetchComments(selectedTask.id, page)}
+                            showControls
+                            showShadow
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onCommentsClose}>
               Kapat
             </Button>
           </ModalFooter>
