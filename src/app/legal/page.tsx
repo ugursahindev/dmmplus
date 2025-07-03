@@ -21,7 +21,7 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { demoAPI } from '@/lib/demo-data';
+import { demoAPI, demoUsers } from '@/lib/demo-data';
 
 interface LegalCase {
   id: number;
@@ -32,7 +32,7 @@ interface LegalCase {
   status: string;
   legalApproved?: boolean;
   legalReviewDate?: string;
-  creator: {
+  creator?: {
     id: number;
     username: string;
     fullName: string;
@@ -43,6 +43,7 @@ interface LegalCase {
     fullName: string;
   };
   createdAt: string;
+  createdById: number;
 }
 
 const statusLabels: Record<string, string> = {
@@ -86,7 +87,28 @@ export default function LegalPage() {
     try {
       setIsLoading(true);
       const response = await demoAPI.getCases({ limit: 50 });
-      const legalCases = response.cases;
+      const legalCases: LegalCase[] = response.cases.map(caseItem => ({
+        ...caseItem,
+        createdAt: caseItem.createdAt.toISOString(),
+        legalReviewDate: caseItem.legalReviewDate?.toISOString(),
+        creator: (() => {
+          const creator = demoUsers.find((user: any) => user.id === caseItem.createdById);
+          return creator ? {
+            id: creator.id,
+            username: creator.username,
+            fullName: creator.fullName,
+          } : undefined;
+        })(),
+        legalReviewer: (() => {
+          if (!caseItem.legalReviewerId) return undefined;
+          const reviewer = demoUsers.find((user: any) => user.id === caseItem.legalReviewerId);
+          return reviewer ? {
+            id: reviewer.id,
+            username: reviewer.username,
+            fullName: reviewer.fullName,
+          } : undefined;
+        })(),
+      }));
       setCases(legalCases);
       
       // Calculate stats

@@ -16,7 +16,6 @@ import {
 } from '@nextui-org/react';
 import { ArrowLeft, Save, X, Upload, FileText, Image as ImageIcon } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { AIAssistant } from '@/components/AIAssistant';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
@@ -390,26 +389,6 @@ export default function NewCasePage() {
                   </div>
                 )}
               </div>
-
-              <Divider />
-
-              {/* AI Asistan */}
-              <AIAssistant
-                initialText={formData.newsSummary || formData.description}
-                caseData={{
-                  title: formData.title,
-                  description: formData.description,
-                  platform: formData.platform,
-                  priority: formData.priority,
-                  geographicScope: formData.geographicScope,
-                  disinformationType: formData.disinformationType
-                }}
-                onSummaryGenerated={(summary) => handleChange('newsSummary', summary)}
-                onTagsGenerated={(newTags) => setFormData(prev => ({ 
-                  ...prev, 
-                  tags: Array.from(new Set([...prev.tags, ...newTags])) 
-                }))}
-              />
 
               <Divider />
 

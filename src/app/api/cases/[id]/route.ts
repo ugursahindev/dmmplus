@@ -4,7 +4,7 @@ import { authUtils } from '@/lib/auth';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authorization header'ı kontrol et
@@ -53,7 +53,8 @@ export async function DELETE(
       );
     }
 
-    const caseId = parseInt(params.id);
+    const resolvedParams = await params;
+    const caseId = parseInt(resolvedParams.id);
 
     if (isNaN(caseId)) {
       return NextResponse.json(
@@ -95,7 +96,7 @@ export async function DELETE(
 // Tekil vaka detayını getirme
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authorization header'ı kontrol et
@@ -136,7 +137,8 @@ export async function GET(
       );
     }
 
-    const caseId = parseInt(params.id);
+    const resolvedParams = await params;
+    const caseId = parseInt(resolvedParams.id);
 
     if (isNaN(caseId)) {
       return NextResponse.json(
@@ -281,7 +283,7 @@ export async function GET(
 // Vaka güncelleme
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authorization header'ı kontrol et
@@ -322,7 +324,8 @@ export async function PUT(
       );
     }
 
-    const caseId = parseInt(params.id);
+    const resolvedParams = await params;
+    const caseId = parseInt(resolvedParams.id);
 
     if (isNaN(caseId)) {
       return NextResponse.json(

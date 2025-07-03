@@ -5,7 +5,7 @@ import { authUtils } from '@/lib/auth';
 // Belirli bir kullanıcıyı getir
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authorization header'ı kontrol et
@@ -46,16 +46,16 @@ export async function GET(
       );
     }
 
+    const resolvedParams = await params;
     // Sadece ADMIN rolündeki kullanıcılar veya kendi profilini görüntüleyen kullanıcılar
-    if (currentUser.role !== 'ADMIN' && currentUser.id !== parseInt(params.id)) {
+    if (currentUser.role !== 'ADMIN' && currentUser.id !== parseInt(resolvedParams.id)) {
       return NextResponse.json(
         { error: 'Bu işlem için yetkiniz bulunmamaktadır' },
         { status: 403 }
       );
     }
-
     // ID'yi sayıya çevir
-    const userId = parseInt(params.id);
+    const userId = parseInt(resolvedParams.id);
     if (isNaN(userId)) {
       return NextResponse.json(
         { error: 'Geçersiz kullanıcı ID' },
@@ -100,7 +100,7 @@ export async function GET(
 // Kullanıcı güncelle
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authorization header'ı kontrol et
@@ -142,7 +142,8 @@ export async function PUT(
     }
 
     // ID'yi sayıya çevir
-    const userId = parseInt(params.id);
+    const resolvedParams = await params;
+    const userId = parseInt(resolvedParams.id);
     if (isNaN(userId)) {
       return NextResponse.json(
         { error: 'Geçersiz kullanıcı ID' },
@@ -271,7 +272,7 @@ export async function PUT(
 // Kullanıcı sil (sadece ADMIN)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authorization header'ı kontrol et
@@ -321,7 +322,8 @@ export async function DELETE(
     }
 
     // ID'yi sayıya çevir
-    const userId = parseInt(params.id);
+    const resolvedParams = await params;
+    const userId = parseInt(resolvedParams.id);
     if (isNaN(userId)) {
       return NextResponse.json(
         { error: 'Geçersiz kullanıcı ID' },
