@@ -655,14 +655,15 @@ export default function MessagesPage() {
                 <ModalHeader>Yeni Konuşma</ModalHeader>
                 <ModalBody>
                   <div className="space-y-4">
-                    <Input
-                      label="Konuşma Başlığı (Opsiyonel)"
-                      placeholder="Grup konuşması için başlık girin..."
-                      value={conversationTitle}
-                      onChange={(e) => setConversationTitle(e.target.value)}
-                      description={selectedUsers.length > 1 ? "Grup konuşması için başlık zorunludur" : "İki kişilik konuşma için boş bırakabilirsiniz"}
-                    />
-                    
+                    {selectedUsers.length > 1 && (
+                      <Input
+                        label="Grup Konuşması Başlığı"
+                        placeholder="Başlık girin..."
+                        value={conversationTitle}
+                        onChange={(e) => setConversationTitle(e.target.value)}
+                        description="Grup konuşması için başlık zorunludur"
+                      />
+                    )}
                     <Autocomplete
                       label="Kullanıcı Seç"
                       placeholder="Kullanıcı ara..."
