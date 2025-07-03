@@ -21,29 +21,18 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { demoAPI, demoUsers } from '@/lib/demo-data';
+import { api } from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
+import { Case } from '@/types';
 
-interface LegalCase {
-  id: number;
-  caseNumber: string;
-  title: string;
-  platform: string;
-  priority: string;
-  status: string;
+interface LegalCase extends Omit<Case, 'legalReviewDate'> {
   legalApproved?: boolean;
   legalReviewDate?: string;
-  creator?: {
-    id: number;
-    username: string;
-    fullName: string;
-  };
   legalReviewer?: {
     id: number;
     username: string;
     fullName: string;
   };
-  createdAt: string;
-  createdById: number;
 }
 
 const statusLabels: Record<string, string> = {
@@ -70,6 +59,7 @@ const priorityLabels: Record<string, string> = {
 
 export default function LegalPage() {
   const router = useRouter();
+  const { token } = useAuth();
   const [cases, setCases] = useState<LegalCase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -80,48 +70,19 @@ export default function LegalPage() {
   });
 
   useEffect(() => {
-    fetchCases();
-  }, []);
+    if (token) {
+      fetchCases();
+    }
+  }, [token]);
 
   const fetchCases = async () => {
+    if (!token) return;
+    
     try {
       setIsLoading(true);
-      const response = await demoAPI.getCases({ limit: 50 });
-      const legalCases: LegalCase[] = response.cases.map(caseItem => ({
-        ...caseItem,
-        createdAt: caseItem.createdAt.toISOString(),
-        legalReviewDate: caseItem.legalReviewDate?.toISOString(),
-        creator: (() => {
-          const creator = demoUsers.find((user: any) => user.id === caseItem.createdById);
-          return creator ? {
-            id: creator.id,
-            username: creator.username,
-            fullName: creator.fullName,
-          } : undefined;
-        })(),
-        legalReviewer: (() => {
-          if (!caseItem.legalReviewerId) return undefined;
-          const reviewer = demoUsers.find((user: any) => user.id === caseItem.legalReviewerId);
-          return reviewer ? {
-            id: reviewer.id,
-            username: reviewer.username,
-            fullName: reviewer.fullName,
-          } : undefined;
-        })(),
-      }));
-      setCases(legalCases);
-      
-      // Calculate stats
-      const pending = legalCases.filter((c: LegalCase) => c.status === 'HUKUK_INCELEMESI').length;
-      const approved = legalCases.filter((c: LegalCase) => c.legalApproved === true).length;
-      const rejected = legalCases.filter((c: LegalCase) => c.legalApproved === false).length;
-      
-      setStats({
-        pending,
-        approved,
-        rejected,
-        total: legalCases.length,
-      });
+      const response = await api.getLegalCases(token, 1, 50);
+      setCases(response.cases as LegalCase[]);
+      setStats(response.stats);
     } catch (error) {
       console.error('Failed to fetch legal cases:', error);
     } finally {

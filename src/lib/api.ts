@@ -20,6 +20,20 @@ export interface CasesResponse {
   limit: number;
 }
 
+export interface LegalCasesResponse {
+  cases: Case[];
+  totalPages: number;
+  currentPage: number;
+  totalCases: number;
+  limit: number;
+  stats: {
+    pending: number;
+    approved: number;
+    rejected: number;
+    total: number;
+  };
+}
+
 export interface TasksResponse {
   tasks: Task[];
   totalPages: number;
@@ -176,6 +190,43 @@ export interface TaskCommentsResponse {
 
 export interface CreateTaskCommentData {
   comment: string;
+}
+
+export interface StatsResponse {
+  summary: {
+    total: number;
+    pending: number;
+    inProgress: number;
+    completed: number;
+  };
+  byStatus: Record<string, number>;
+  byPriority: Record<string, number>;
+  byPlatform: Record<string, number>;
+  recentCases: Array<{
+    id: number;
+    caseNumber: string;
+    title: string;
+    status: string;
+    priority: string;
+    createdAt: string;
+  }>;
+  userActivity: Array<{
+    user: string;
+    cases: number;
+    role: string;
+  }>;
+  byGeographicScope: Array<{
+    name: string;
+    value: number;
+  }>;
+  topTags: Array<{
+    tag: string;
+    count: number;
+  }>;
+  ministryDistribution: Array<{
+    ministry: string;
+    count: number;
+  }>;
 }
 
 export const api = {
@@ -516,6 +567,57 @@ export const api = {
 
     if (!response.ok) {
       throw new Error(data.error || 'Yorum eklenemedi');
+    }
+
+    return data;
+  },
+
+  // Get statistics
+  getStats: async (token: string): Promise<StatsResponse> => {
+    const response = await fetch(`${API_BASE_URL}/api/stats`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'İstatistikler yüklenemedi');
+    }
+
+    return data;
+  },
+
+  // Get legal cases with pagination and filters
+  getLegalCases: async (
+    token: string,
+    page: number = 1,
+    limit: number = 50,
+    search?: string,
+    priority?: string,
+    platform?: string,
+    legalStatus?: string
+  ): Promise<LegalCasesResponse> => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(search && { search }),
+      ...(priority && { priority }),
+      ...(platform && { platform }),
+      ...(legalStatus && { legalStatus }),
+    });
+
+    const response = await fetch(`${API_BASE_URL}/api/cases/legal?${params}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Hukuki vakalar yüklenemedi');
     }
 
     return data;
