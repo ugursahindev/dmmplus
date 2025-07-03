@@ -142,7 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     storage.setToken(null);
     storage.setCurrentUser(null);
     toast.success('Çıkış yapıldı');
-    router.push('/login');
+    
+    // Use window.location.href for guaranteed navigation to login page
+    window.location.href = '/login';
   };
 
   const updateUser = (userData: User) => {
