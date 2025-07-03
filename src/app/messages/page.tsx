@@ -108,6 +108,8 @@ export default function MessagesPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [searchingUsers, setSearchingUsers] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [conversationTitle, setConversationTitle] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -241,6 +243,16 @@ export default function MessagesPage() {
     }
   };
 
+  const handleModalOpen = () => {
+    onOpen();
+    // Modal açıldığında tüm kullanıcıları yükle
+    fetchUsers('');
+    // State'leri temizle
+    setSelectedUsers([]);
+    setConversationTitle('');
+    setUserSearchQuery('');
+  };
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
@@ -290,6 +302,12 @@ export default function MessagesPage() {
       return;
     }
 
+    // Grup konuşması için title zorunlu
+    if (selectedUsers.length > 1 && !conversationTitle.trim()) {
+      toast.error('Grup konuşması için başlık zorunludur');
+      return;
+    }
+
     try {
       if (!token) {
         throw new Error('No authentication token');
@@ -302,7 +320,8 @@ export default function MessagesPage() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          participantIds: selectedUsers
+          participantIds: selectedUsers,
+          title: conversationTitle.trim() || null
         }),
       });
 
@@ -318,6 +337,9 @@ export default function MessagesPage() {
       
       setSelectedConversation(data.conversation);
       setSelectedUsers([]);
+      setUsers([]);
+      setUserSearchQuery('');
+      setConversationTitle('');
       onClose();
     } catch (error) {
       console.error('Error creating conversation:', error);
@@ -422,7 +444,7 @@ export default function MessagesPage() {
                       isIconOnly
                       color="primary"
                       size="sm"
-                      onPress={onOpen}
+                      onPress={handleModalOpen}
                     >
                       <Plus className="w-4 h-4" />
                     </Button>
@@ -525,9 +547,22 @@ export default function MessagesPage() {
                       )}
                       <div>
                         <p className="font-medium">{getConversationTitle(selectedConversation)}</p>
-                        <p className="text-sm text-default-500">
-                          {selectedConversation.participants.length} katılımcı
-                        </p>
+                        {selectedConversation.isGroup ? (
+                          <p className="text-sm text-default-500">
+                            {selectedConversation.participants
+                              .filter(p => p.user && p.user.id !== user?.id)
+                              .map(p => p.user.fullName)
+                              .join(', ')
+                            }
+                            {selectedConversation.participants.length > 1 && (
+                              <span> ({selectedConversation.participants.length} katılımcı)</span>
+                            )}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-default-500">
+                            {selectedConversation.participants.length} katılımcı
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -619,15 +654,26 @@ export default function MessagesPage() {
               <>
                 <ModalHeader>Yeni Konuşma</ModalHeader>
                 <ModalBody>
-                  <Autocomplete
-                    label="Kullanıcı Seç"
-                    placeholder="Kullanıcı ara..."
-                    isLoading={searchingUsers}
-                    onInputChange={(value) => {
-                      if (value.length > 1) fetchUsers(value);
-                    }}
-                    startContent={<Search className="w-4 h-4 text-default-400" />}
-                  >
+                  <div className="space-y-4">
+                    <Input
+                      label="Konuşma Başlığı (Opsiyonel)"
+                      placeholder="Grup konuşması için başlık girin..."
+                      value={conversationTitle}
+                      onChange={(e) => setConversationTitle(e.target.value)}
+                      description={selectedUsers.length > 1 ? "Grup konuşması için başlık zorunludur" : "İki kişilik konuşma için boş bırakabilirsiniz"}
+                    />
+                    
+                    <Autocomplete
+                      label="Kullanıcı Seç"
+                      placeholder="Kullanıcı ara..."
+                      isLoading={searchingUsers}
+                      value={userSearchQuery}
+                      onInputChange={(value) => {
+                        setUserSearchQuery(value);
+                        fetchUsers(value);
+                      }}
+                      startContent={<Search className="w-4 h-4 text-default-400" />}
+                    >
                     {users.map((u) => (
                       <AutocompleteItem
                         key={u.id}
@@ -669,6 +715,7 @@ export default function MessagesPage() {
                       </div>
                     </div>
                   )}
+                  </div>
                 </ModalBody>
                 <ModalFooter>
                   <Button color="danger" variant="light" onPress={onClose}>
@@ -677,9 +724,9 @@ export default function MessagesPage() {
                   <Button 
                     color="primary" 
                     onPress={handleCreateConversation}
-                    isDisabled={selectedUsers.length === 0}
+                    isDisabled={selectedUsers.length === 0 || (selectedUsers.length > 1 && !conversationTitle.trim())}
                   >
-                    Konuşma Başlat
+                    {selectedUsers.length > 1 ? 'Grup Konuşması Başlat' : 'Konuşma Başlat'}
                   </Button>
                 </ModalFooter>
               </>

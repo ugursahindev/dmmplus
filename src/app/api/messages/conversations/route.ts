@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
 
     // Request body'yi al
     const body = await request.json();
-    const { participantIds, title, isGroup = false } = body;
+    const { participantIds, title } = body;
 
     // Gerekli alanları kontrol et
     if (!participantIds || !Array.isArray(participantIds) || participantIds.length === 0) {
@@ -178,6 +178,9 @@ export async function POST(request: NextRequest) {
 
     // Mevcut kullanıcıyı da katılımcılara ekle
     const allParticipantIds = [...new Set([currentUser.id, ...participantIds])];
+    
+    // İkiden fazla katılımcı varsa grup konuşması yap
+    const isGroup = allParticipantIds.length > 2;
 
     // Kullanıcıların var olduğunu kontrol et
     const users = await prisma.user.findMany({
