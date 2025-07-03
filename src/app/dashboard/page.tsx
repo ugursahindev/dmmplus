@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardBody, CardHeader, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner, Button } from '@nextui-org/react';
-import { FileText, Clock, CheckCircle, AlertCircle, TrendingUp, BarChart3, RefreshCw } from 'lucide-react';
+import { Card, CardBody, CardHeader, Chip, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner } from '@nextui-org/react';
+import { FileText, Clock, CheckCircle, TrendingUp } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import StatsCard from '@/components/cases/StatsCard';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
-import { demoAPI, storage } from '@/lib/demo-data';
+import { useAuth } from '@/hooks/useAuth';
+import { api } from '@/lib/api';
 
 interface Stats {
   summary: {
@@ -55,16 +56,24 @@ const statusColors: Record<string, 'default' | 'primary' | 'secondary' | 'succes
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { token } = useAuth();
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    if (token) {
+      fetchStats();
+    }
+  }, [token]);
 
   const fetchStats = async () => {
+    if (!token) return;
+    
     try {
       setIsLoading(true);
-      const data = await demoAPI.getStats();
-      setStats(data);
+      const data = await api.getStats(token);
+      setStats({
+        summary: data.summary,
+        recentCases: data.recentCases
+      });
     } catch (error) {
       console.error('Failed to fetch stats:', error);
       toast.error('İstatistikler yüklenirken hata oluştu');
@@ -73,34 +82,11 @@ export default function DashboardPage() {
     }
   };
 
-  const resetDemoData = async () => {
-    if (!confirm('Demo verilerini sıfırlamak istediğinizden emin misiniz? Tüm değişiklikler silinecek.')) {
-      return;
-    }
-    
-    try {
-      storage.resetDemoData();
-      toast.success('Demo verileri sıfırlandı');
-      fetchStats();
-    } catch (error) {
-      console.error('Failed to reset demo data:', error);
-      toast.error('Demo verileri sıfırlanırken hata oluştu');
-    }
-  };
-
   return (
     <DashboardLayout allowedRoles={['ADMIN', 'IDP_PERSONNEL']}>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <Button
-            color="secondary"
-            variant="flat"
-            startContent={<RefreshCw className="w-4 h-4" />}
-            onClick={resetDemoData}
-          >
-            Demo Verilerini Sıfırla
-          </Button>
         </div>
 
         {isLoading ? (

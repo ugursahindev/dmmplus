@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardBody,
@@ -22,6 +22,7 @@ import {
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { api } from '@/lib/api';
 
 interface ProfileData {
   fullName: string;
@@ -53,10 +54,11 @@ interface SystemSettings {
 }
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, token, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
   // Profile State
   const [profileData, setProfileData] = useState<ProfileData>({
@@ -91,20 +93,52 @@ export default function SettingsPage() {
     maintenanceMode: false,
   });
 
+  // Ayarları yükle
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!token) return;
+      
+      try {
+        const { settings } = await api.getSettings(token);
+        if (settings.notifications) {
+          setNotificationSettings(settings.notifications);
+        }
+        if (settings.system) {
+          setSystemSettings(settings.system);
+        }
+      } catch (error) {
+        console.error('Ayarlar yüklenirken hata:', error);
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+
+    loadSettings();
+  }, [token]);
+
   const handleProfileUpdate = async () => {
+    if (!token) return;
+    
     setIsLoading(true);
     try {
-      // Simulated API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { user: updatedUser } = await api.updateProfile(token, {
+        fullName: profileData.fullName,
+        email: profileData.email,
+        username: profileData.username,
+      });
+      
+      updateUser(updatedUser);
       toast.success('Profil bilgileri güncellendi');
-    } catch (error) {
-      toast.error('Profil güncellenirken hata oluştu');
+    } catch (error: any) {
+      toast.error(error.message || 'Profil güncellenirken hata oluştu');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handlePasswordUpdate = async () => {
+    if (!token) return;
+    
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast.error('Yeni şifreler eşleşmiyor');
       return;
@@ -117,46 +151,70 @@ export default function SettingsPage() {
 
     setIsLoading(true);
     try {
-      // Simulated API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await api.updatePassword(token, {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+      
       toast.success('Şifre başarıyla güncellendi');
       setPasswordData({
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
       });
-    } catch (error) {
-      toast.error('Şifre güncellenirken hata oluştu');
+    } catch (error: any) {
+      toast.error(error.message || 'Şifre güncellenirken hata oluştu');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleNotificationUpdate = async () => {
+    if (!token) return;
+    
     setIsLoading(true);
     try {
-      // This would normally save to a settings API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await api.updateSettings(token, {
+        notifications: notificationSettings
+      });
       toast.success('Bildirim ayarları güncellendi');
-    } catch (error) {
-      toast.error('Bildirim ayarları güncellenirken hata oluştu');
+    } catch (error: any) {
+      toast.error(error.message || 'Bildirim ayarları güncellenirken hata oluştu');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSystemUpdate = async () => {
+    if (!token) return;
+    
     setIsLoading(true);
     try {
-      // This would normally save to a settings API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await api.updateSettings(token, {
+        system: systemSettings
+      });
       toast.success('Sistem ayarları güncellendi');
-    } catch (error) {
-      toast.error('Sistem ayarları güncellenirken hata oluştu');
+    } catch (error: any) {
+      toast.error(error.message || 'Sistem ayarları güncellenirken hata oluştu');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (isLoadingSettings) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-default-500">Ayarlar yükleniyor...</p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

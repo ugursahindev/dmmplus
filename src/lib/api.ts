@@ -622,4 +622,81 @@ export const api = {
 
     return data;
   },
+
+  // Update user profile
+  updateProfile: async (token: string, profileData: { fullName: string; email: string; username: string }): Promise<{ message: string; user: User }> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(profileData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Profil güncellenemedi');
+    }
+
+    return data;
+  },
+
+  // Update user password
+  updatePassword: async (token: string, passwordData: { currentPassword: string; newPassword: string }): Promise<{ message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/password`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(passwordData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Şifre güncellenemedi');
+    }
+
+    return data;
+  },
+
+  // Get user settings
+  getSettings: async (token: string): Promise<{ settings: any }> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/settings`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Ayarlar yüklenemedi');
+    }
+
+    return data;
+  },
+
+  // Update user settings
+  updateSettings: async (token: string, settings: { notifications?: any; system?: any }): Promise<{ message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/settings`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settings),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Ayarlar güncellenemedi');
+    }
+
+    return data;
+  },
 }; 
