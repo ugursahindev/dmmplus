@@ -437,7 +437,7 @@ export default function MessagesPage() {
                 
                 <Divider />
                 
-                <ScrollShadow className="flex-1 p-2">
+                <ScrollShadow className="flex-1">
                   {loading ? (
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
@@ -447,19 +447,17 @@ export default function MessagesPage() {
                       Henüz konuşma yok
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      {filteredConversations.map((conv) => {
+                    <div>
+                      {filteredConversations.map((conv, index) => {
                         const isSelected = selectedConversation?.id === conv.id;
                         const otherParticipant = conv.participants.find(p => p.user?.id !== user?.id);
                         
                         return (
-                          <Card
-                            key={conv.id}
-                            isPressable
-                            className={`cursor-pointer ${isSelected ? 'bg-primary-50' : ''}`}
-                            onPress={() => setSelectedConversation(conv)}
-                          >
-                            <CardBody className="p-3">
+                          <div key={conv.id}>
+                            <div
+                              className={`p-4 cursor-pointer hover:bg-default-50 transition-colors ${isSelected ? 'bg-primary-50' : ''}`}
+                              onClick={() => setSelectedConversation(conv)}
+                            >
                               <div className="flex items-start gap-3">
                                 <Badge
                                   content={conv.unreadCount > 0 ? conv.unreadCount : null}
@@ -495,8 +493,9 @@ export default function MessagesPage() {
                                   )}
                                 </div>
                               </div>
-                            </CardBody>
-                          </Card>
+                            </div>
+                            {index < filteredConversations.length - 1 && <Divider />}
+                          </div>
                         );
                       })}
                     </div>
