@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { User, UserRole } from '@/types';
-import { api } from '@/lib/api';
+import { api, setApiLogoutCallback } from '@/lib/api';
 import { log } from 'console';
 
 interface AuthContextType {
@@ -87,6 +87,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  // Set up the logout callback for API error handling
+  useEffect(() => {
+    setApiLogoutCallback(() => {
+      logout(true); // true indicates auto-logout due to server error
+    });
+  }, []);
+
   const login = async (username: string, password: string, fromUrl?: string | null) => {
     try {
       const { user: userData, token: newToken } = await api.login(username, password);
@@ -128,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = async () => {
+  const logout = async (isAutoLogout = false) => {
     try {
       if (token) {
         await api.logout(token);
@@ -141,7 +148,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     storage.setToken(null);
     storage.setCurrentUser(null);
-    toast.success('Çıkış yapıldı');
+    
+    // Show different message based on logout type
+    if (isAutoLogout) {
+      toast.error('Sunucu hatası nedeniyle oturumunuz sonlandırıldı');
+    } else {
+      toast.success('Çıkış yapıldı');
+    }
     
     // Use window.location.href for guaranteed navigation to login page
     window.location.href = '/login';

@@ -2,6 +2,31 @@ import { User, Case } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
+// Global logout callback that will be set by the AuthProvider
+let globalLogoutCallback: (() => void) | null = null;
+
+// Function to set the logout callback
+export const setApiLogoutCallback = (callback: () => void) => {
+  globalLogoutCallback = callback;
+};
+
+// Central fetch wrapper that handles 500 errors
+const apiRequest = async (url: string, options: RequestInit = {}) => {
+  const response = await fetch(url, options);
+  
+  // Check for 500 Internal Server Error
+  if (response.status === 500) {
+    // Trigger logout if callback is available
+    if (globalLogoutCallback) {
+      globalLogoutCallback();
+    }
+    // Still throw an error for the calling code to handle
+    throw new Error('Sunucu hatası. Lütfen tekrar giriş yapın.');
+  }
+  
+  return response;
+};
+
 export interface LoginResponse {
   user: User;
   token: string;
@@ -232,7 +257,7 @@ export interface StatsResponse {
 export const api = {
   // Login
   login: async (username: string, password: string): Promise<LoginResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -251,7 +276,7 @@ export const api = {
 
   // Logout
   logout: async (token: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/auth/logout`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -267,7 +292,7 @@ export const api = {
 
   // Get current user
   getCurrentUser: async (token: string): Promise<User> => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/auth/me`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -301,7 +326,7 @@ export const api = {
       ...(platform && { platform }),
     });
 
-    const response = await fetch(`${API_BASE_URL}/api/cases?${params}`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/cases?${params}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -318,7 +343,7 @@ export const api = {
 
   // Get single case by ID
   getCase: async (token: string, caseId: number): Promise<Case> => {
-    const response = await fetch(`${API_BASE_URL}/api/cases/${caseId}`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/cases/${caseId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -335,7 +360,7 @@ export const api = {
 
   // Create new case
   createCase: async (token: string, caseData: CreateCaseData): Promise<{ message: string; case: Case }> => {
-    const response = await fetch(`${API_BASE_URL}/api/cases`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/cases`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -355,7 +380,7 @@ export const api = {
 
   // Update case
   updateCase: async (token: string, caseId: number, caseData: UpdateCaseData): Promise<{ message: string; case: Case }> => {
-    const response = await fetch(`${API_BASE_URL}/api/cases/${caseId}`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/cases/${caseId}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -375,7 +400,7 @@ export const api = {
 
   // Delete case
   deleteCase: async (token: string, caseId: number): Promise<{ message: string }> => {
-    const response = await fetch(`${API_BASE_URL}/api/cases/${caseId}`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/cases/${caseId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -414,7 +439,7 @@ export const api = {
       ...(caseId && { caseId }),
     });
 
-    const response = await fetch(`${API_BASE_URL}/api/tasks?${params}`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/tasks?${params}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -433,7 +458,7 @@ export const api = {
 
   // Get single task by ID
   getTask: async (token: string, taskId: number): Promise<{ task: Task }> => {
-    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/tasks/${taskId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -450,7 +475,7 @@ export const api = {
 
   // Create new task
   createTask: async (token: string, taskData: CreateTaskData): Promise<{ message: string; task: Task }> => {
-    const response = await fetch(`${API_BASE_URL}/api/tasks`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/tasks`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -470,7 +495,7 @@ export const api = {
 
   // Update task
   updateTask: async (token: string, taskId: number, taskData: UpdateTaskData): Promise<{ message: string; task: Task }> => {
-    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/tasks/${taskId}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -490,7 +515,7 @@ export const api = {
 
   // Delete task
   deleteTask: async (token: string, taskId: number): Promise<{ message: string }> => {
-    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/tasks/${taskId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -508,7 +533,7 @@ export const api = {
 
   // Get task statistics
   getTaskStats: async (token: string): Promise<TaskStats> => {
-    const response = await fetch(`${API_BASE_URL}/api/tasks/stats`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/tasks/stats`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -535,7 +560,7 @@ export const api = {
       limit: limit.toString(),
     });
 
-    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/comments?${params}`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/tasks/${taskId}/comments?${params}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -556,7 +581,7 @@ export const api = {
     taskId: number,
     commentData: CreateTaskCommentData
   ): Promise<{ message: string; comment: TaskComment }> => {
-    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/comments`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/tasks/${taskId}/comments`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -576,7 +601,7 @@ export const api = {
 
   // Get statistics
   getStats: async (token: string): Promise<StatsResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/stats`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/stats`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -610,7 +635,7 @@ export const api = {
       ...(legalStatus && { legalStatus }),
     });
 
-    const response = await fetch(`${API_BASE_URL}/api/cases/legal?${params}`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/cases/legal?${params}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -627,7 +652,7 @@ export const api = {
 
   // Update user profile
   updateProfile: async (token: string, profileData: { fullName: string; email: string; username: string }): Promise<{ message: string; user: User }> => {
-    const response = await fetch(`${API_BASE_URL}/api/users/profile`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/users/profile`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -647,7 +672,7 @@ export const api = {
 
   // Update user password
   updatePassword: async (token: string, passwordData: { currentPassword: string; newPassword: string }): Promise<{ message: string }> => {
-    const response = await fetch(`${API_BASE_URL}/api/users/password`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/users/password`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -667,7 +692,7 @@ export const api = {
 
   // Get user settings
   getSettings: async (token: string): Promise<{ settings: any }> => {
-    const response = await fetch(`${API_BASE_URL}/api/users/settings`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/users/settings`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -684,7 +709,7 @@ export const api = {
 
   // Update user settings
   updateSettings: async (token: string, settings: { notifications?: any; system?: any }): Promise<{ message: string }> => {
-    const response = await fetch(`${API_BASE_URL}/api/users/settings`, {
+    const response = await apiRequest(`${API_BASE_URL}/api/users/settings`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
