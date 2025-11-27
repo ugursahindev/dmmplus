@@ -1,4 +1,6 @@
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, Header, ImageRun, HorizontalPositionAlign, HorizontalPositionRelativeFrom, VerticalPositionAlign, VerticalPositionRelativeFrom } from 'docx';
+import type { IImageOptions } from 'docx';
+import arzNotuTemplate from '@/images/arznotu_arkaplan.png';
 import { Case } from '@/types';
 
 const statusLabels: Record<string, string> = {
@@ -26,6 +28,70 @@ const platformLabels: Record<string, string> = {
   TELEGRAM: 'Telegram',
   TIKTOK: 'TikTok',
   OTHER: 'Diğer',
+};
+
+const arzNotuPageMargins = {
+  top: 2200,
+  right: 1200,
+  bottom: 1600,
+  left: 1200,
+};
+
+let arzNotuTemplateBufferPromise: Promise<ArrayBuffer> | null = null;
+
+const loadArzNotuTemplateBuffer = async (): Promise<ArrayBuffer> => {
+  if (arzNotuTemplateBufferPromise) {
+    return arzNotuTemplateBufferPromise;
+  }
+
+  if (typeof window === 'undefined') {
+    throw new Error('Arz notu şablonu sadece istemci tarafında yüklenebilir.');
+  }
+
+  arzNotuTemplateBufferPromise = fetch(arzNotuTemplate.src).then((response) => {
+    if (!response.ok) {
+      throw new Error('Arz notu arkaplan görseli yüklenemedi.');
+    }
+    return response.arrayBuffer();
+  });
+
+  return arzNotuTemplateBufferPromise;
+};
+
+const buildArzNotuBackgroundHeader = async (): Promise<Header> => {
+  const templateBuffer = await loadArzNotuTemplateBuffer();
+  const templateData = new Uint8Array(templateBuffer);
+
+  const backgroundImageOptions = {
+    data: templateData,
+    transformation: {
+      width: arzNotuTemplate.width,
+      height: arzNotuTemplate.height,
+    },
+    floating: {
+      horizontalPosition: {
+        relative: HorizontalPositionRelativeFrom.PAGE,
+        align: HorizontalPositionAlign.CENTER,
+      },
+      verticalPosition: {
+        relative: VerticalPositionRelativeFrom.PAGE,
+        align: VerticalPositionAlign.TOP,
+      },
+      allowOverlap: true,
+      behindDocument: true,
+    },
+  } as unknown as IImageOptions; // docx typings expect Svg options; force raster config
+
+  return new Header({
+    children: [
+      new Paragraph({
+        children: [
+          new ImageRun(backgroundImageOptions),
+        ],
+        spacing: { after: 0 },
+      }),
+    ],
+  });
 };
 
 // Standart rapor oluşturma fonksiyonu
@@ -358,16 +424,24 @@ export const generateCaseReport = async (caseData: any): Promise<Blob> => {
     },
   });
 
-  const buffer = await Packer.toBuffer(doc);
-  return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  return Packer.toBlob(doc);
 };
 
 // Arz notu formatında rapor oluşturma fonksiyonu
 export const generateCaseReportWithTemplate = async (caseData: any): Promise<Blob> => {
+  const arzNotuHeader = await buildArzNotuBackgroundHeader();
+
   const doc = new Document({
     sections: [
       {
-        properties: {},
+        properties: {
+          page: {
+            margin: arzNotuPageMargins,
+          },
+        },
+        headers: {
+          default: arzNotuHeader,
+        },
         children: [
           // Başlık - Arz Notu Formatı
           new Paragraph({
@@ -677,8 +751,7 @@ export const generateCaseReportWithTemplate = async (caseData: any): Promise<Blo
     },
   });
 
-  const buffer = await Packer.toBuffer(doc);
-  return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  return Packer.toBlob(doc);
 };
 
 export const downloadReport = (blob: Blob, filename: string) => {

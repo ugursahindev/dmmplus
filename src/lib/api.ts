@@ -13,17 +13,19 @@ export const setApiLogoutCallback = (callback: () => void) => {
 // Central fetch wrapper that handles 500 errors
 const apiRequest = async (url: string, options: RequestInit = {}) => {
   const response = await fetch(url, options);
-  
-  // Check for 500 Internal Server Error
-  if (response.status === 500) {
-    // Trigger logout if callback is available
-    if (globalLogoutCallback) {
-      globalLogoutCallback();
-    }
-    // Still throw an error for the calling code to handle
+
+  if (response.status === 401 && globalLogoutCallback) {
+    globalLogoutCallback();
+  }
+
+  if (response.status >= 500 && globalLogoutCallback) {
+    globalLogoutCallback();
+  }
+
+  if (response.status >= 500) {
     throw new Error('Sunucu hatası. Lütfen tekrar giriş yapın.');
   }
-  
+
   return response;
 };
 

@@ -37,14 +37,14 @@ export type SourceType =
 export interface User {
   id: number;
   username: string;
-  password: string;
+  password?: string;
   email: string;
   fullName: string;
   role: UserRole;
   institution?: string;
-  active: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  active?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Case {
