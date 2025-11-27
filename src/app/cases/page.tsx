@@ -89,15 +89,27 @@ export default function CasesPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [generatingReports, setGeneratingReports] = useState<Set<number>>(new Set());
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1); // Reset to first page when searching
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     if (token) {
       fetchCases();
     }
-  }, [page, search, statusFilter, priorityFilter, token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, debouncedSearch, statusFilter, priorityFilter, token]);
 
   const fetchCases = async () => {
     try {
@@ -107,7 +119,7 @@ export default function CasesPage() {
         token!,
         page,
         10,
-        search || undefined,
+        debouncedSearch || undefined,
         statusFilter || undefined,
         priorityFilter || undefined
       );
@@ -353,7 +365,11 @@ export default function CasesPage() {
             placeholder="Durum filtrele"
             startContent={<Filter className="w-4 h-4 text-default-400" />}
             selectedKeys={statusFilter ? [statusFilter] : []}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onSelectionChange={(keys) => {
+              const selectedValue = Array.from(keys)[0] as string;
+              setStatusFilter(selectedValue === 'all' || !selectedValue ? '' : selectedValue);
+              setPage(1); // Reset to first page when filtering
+            }}
           >
             <SelectItem key="all" value="">Tümü</SelectItem>
             <SelectItem key="IDP_FORM" value="IDP_FORM">IDP Formu</SelectItem>
@@ -368,7 +384,11 @@ export default function CasesPage() {
             placeholder="Öncelik filtrele"
             startContent={<Filter className="w-4 h-4 text-default-400" />}
             selectedKeys={priorityFilter ? [priorityFilter] : []}
-            onChange={(e) => setPriorityFilter(e.target.value)}
+            onSelectionChange={(keys) => {
+              const selectedValue = Array.from(keys)[0] as string;
+              setPriorityFilter(selectedValue === 'all' || !selectedValue ? '' : selectedValue);
+              setPage(1); // Reset to first page when filtering
+            }}
           >
             <SelectItem key="all" value="">Tümü</SelectItem>
             <SelectItem key="LOW" value="LOW">Düşük</SelectItem>

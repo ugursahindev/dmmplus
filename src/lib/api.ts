@@ -10,20 +10,48 @@ export const setApiLogoutCallback = (callback: () => void) => {
   globalLogoutCallback = callback;
 };
 
-// Central fetch wrapper that handles 500 errors
+// Central fetch wrapper that handles errors
 const apiRequest = async (url: string, options: RequestInit = {}) => {
-  const response = await fetch(url, options);
-
-  if (response.status === 401 && globalLogoutCallback) {
-    globalLogoutCallback();
+  let response: Response;
+  
+  try {
+    response = await fetch(url, options);
+  } catch (error) {
+    // Network error - don't logout, just throw
+    console.error('Network error:', error);
+    throw new Error('Ağ bağlantısı hatası. Lütfen internet bağlantınızı kontrol edin.');
   }
 
-  if (response.status >= 500 && globalLogoutCallback) {
-    globalLogoutCallback();
+  // Handle 401 Unauthorized - only logout if it's a real auth error
+  if (response.status === 401) {
+    // Check if it's a login endpoint - don't logout on login failures
+    if (!url.includes('/api/auth/login')) {
+      // Read response to check error type
+      try {
+        const errorData = await response.clone().json();
+        // Only logout if it's a token/auth related error
+        if (errorData.error && (
+          errorData.error.includes('Token') || 
+          errorData.error.includes('token') ||
+          errorData.error.includes('Oturum') ||
+          errorData.error.includes('Yetkiniz')
+        )) {
+          if (globalLogoutCallback) {
+            globalLogoutCallback();
+          }
+        }
+      } catch {
+        // If can't parse JSON, assume it's an auth error and logout
+        if (globalLogoutCallback && !url.includes('/api/auth/login')) {
+          globalLogoutCallback();
+        }
+      }
+    }
   }
 
+  // Don't logout on 500 errors - these are server errors, not auth errors
   if (response.status >= 500) {
-    throw new Error('Sunucu hatası. Lütfen tekrar giriş yapın.');
+    throw new Error('Sunucu hatası. Lütfen daha sonra tekrar deneyin.');
   }
 
   return response;
