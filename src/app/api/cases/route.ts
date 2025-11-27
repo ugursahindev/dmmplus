@@ -55,27 +55,38 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     // Filtreleme koşullarını oluştur
-    const where: any = {};
+    const whereConditions: any[] = [];
 
-    if (search) {
-      where.OR = [
-        { caseNumber: { contains: search, mode: 'insensitive' } },
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
+    // Base filters (status, priority, platform)arama
     if (status) {
-      where.status = status;
+      whereConditions.push({ status });
     }
 
     if (priority) {
-      where.priority = priority;
+      whereConditions.push({ priority });
     }
 
     if (platform) {
-      where.platform = platform;
+      whereConditions.push({ platform });
     }
+
+    // Search filter - SQLite doesn't support mode: 'insensitive'
+    // Using contains which is case-sensitive in SQLite
+    if (search && search.trim()) {
+      const searchTerm = search.trim();
+      whereConditions.push({
+        OR: [
+          { caseNumber: { contains: searchTerm } },
+          { title: { contains: searchTerm } },
+          { description: { contains: searchTerm } },
+        ]
+      });
+    }
+
+    // Build final where clause
+    const where = whereConditions.length > 0 
+      ? (whereConditions.length === 1 ? whereConditions[0] : { AND: whereConditions })
+      : {};
 
     // Toplam vaka sayısını al
     const totalCases = await prisma.case.count({ where });
@@ -139,10 +150,19 @@ export async function GET(request: NextRequest) {
       limit,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get cases error:', error);
+    console.error('Error details:', {
+      message: error?.message,
+      code: error?.code,
+      meta: error?.meta,
+      stack: error?.stack
+    });
     return NextResponse.json(
-      { error: 'Sunucu hatası' },
+      { 
+        error: 'Sunucu hatası',
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+      },
       { status: 500 }
     );
   }
