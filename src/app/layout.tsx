@@ -7,7 +7,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'DMM - Dezinformasyonla Mücadele Merkezi',
+  title: 'DMM - Dezenformasyonla Mücadele Merkezi',
   description: 'Dezinformasyon vakalarının takip ve yönetim sistemi',
 };
 
