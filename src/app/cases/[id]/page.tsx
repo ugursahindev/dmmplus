@@ -45,6 +45,7 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
+import { generateCaseReportWithTemplate, downloadReport } from '@/utils/reportGenerator';
 
 interface CaseDetail {
   id: number;
@@ -151,6 +152,21 @@ export default function CaseDetailPage() {
     onOpen();
   };
 
+  const handleDownloadReport = async () => {
+    try {
+      toast.loading('Rapor hazırlanıyor...');
+      const blob = await generateCaseReportWithTemplate(caseData);
+      const filename = `Arz_Notu_${caseData.caseNumber}_${new Date().toISOString().split('T')[0]}.docx`;
+      downloadReport(blob, filename);
+      toast.dismiss();
+      toast.success('Rapor başarıyla indirildi');
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Rapor oluşturulurken hata oluştu');
+      console.error('Report generation error:', error);
+    }
+  };
+
   const submitAction = async () => {
     if (!caseData) return;
 
@@ -254,15 +270,24 @@ export default function CaseDetailPage() {
               <p className="text-default-500">Vaka No: {caseData.caseNumber}</p>
             </div>
           </div>
-          {canEdit && (
+          <div className="flex gap-2">
             <Button
-              color="primary"
-              startContent={<Edit className="w-4 h-4" />}
-              onClick={() => router.push(`/cases/${params.id}/edit`)}
+              color="secondary"
+              startContent={<Download className="w-4 h-4" />}
+              onClick={handleDownloadReport}
             >
-              Düzenle
+              Arz Notu İndir
             </Button>
-          )}
+            {canEdit && (
+              <Button
+                color="primary"
+                startContent={<Edit className="w-4 h-4" />}
+                onClick={() => router.push(`/cases/${params.id}/edit`)}
+              >
+                Düzenle
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Status Card */}

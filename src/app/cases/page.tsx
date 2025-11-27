@@ -18,7 +18,7 @@ import {
   Tooltip,
   User
 } from '@nextui-org/react';
-import { Plus, Search, Eye, Edit, Trash2, Filter } from 'lucide-react';
+import { Plus, Search, Eye, Edit, Trash2, Filter, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import toast from 'react-hot-toast';
@@ -27,6 +27,7 @@ import { tr } from 'date-fns/locale';
 import { Case } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
+import { generateCaseReport, downloadReport } from '@/utils/reportGenerator';
 
 type CaseWithCreator = Case & {
   creator: {
@@ -90,6 +91,7 @@ export default function CasesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
+  const [generatingReports, setGeneratingReports] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (token) {
@@ -143,6 +145,36 @@ export default function CasesPage() {
       fetchCases();
     } catch (error: any) {
       toast.error(error.message || 'Vaka silinirken hata oluştu');
+    }
+  };
+
+  const handleGenerateReport = async (caseData: CaseWithCreator) => {
+    try {
+      setGeneratingReports(prev => new Set(prev).add(caseData.id));
+      toast.loading('Rapor hazırlanıyor...');
+      
+      // Vaka detaylarını al
+      const fullCaseData = await api.getCase(token!, caseData.id);
+      
+      // Rapor oluştur
+      const reportBlob = await generateCaseReport(fullCaseData);
+      
+      // Raporu indir
+      const filename = `DMM_Vaka_Raporu_${caseData.caseNumber}_${caseData.title.replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ]/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`;
+      downloadReport(reportBlob, filename);
+      
+      toast.dismiss();
+      toast.success('Rapor başarıyla oluşturuldu ve indirildi');
+    } catch (error: any) {
+      toast.dismiss();
+      console.error('Rapor oluşturma hatası:', error);
+      toast.error(error.message || 'Rapor oluşturulurken hata oluştu');
+    } finally {
+      setGeneratingReports(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(caseData.id);
+        return newSet;
+      });
     }
   };
 
@@ -260,6 +292,20 @@ export default function CasesPage() {
                 <Edit className="w-4 h-4" />
               </Button>
             </Tooltip>
+            {item.status === 'RAPOR_URETIMI' && (
+              <Tooltip content="Word Raporu Oluştur ve İndir">
+                <Button
+                  size="sm"
+                  variant="flat"
+                  color="success"
+                  startContent={generatingReports.has(item.id) ? <Spinner size="sm" /> : <FileText className="w-4 h-4" />}
+                  onClick={() => handleGenerateReport(item)}
+                  isDisabled={generatingReports.has(item.id)}
+                >
+                  {generatingReports.has(item.id) ? 'Hazırlanıyor...' : 'Rapor Üret'}
+                </Button>
+              </Tooltip>
+            )}
             <Tooltip content="Sil">
               <Button
                 isIconOnly
