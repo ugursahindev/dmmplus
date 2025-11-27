@@ -2,20 +2,31 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { Card, CardBody, CardHeader, Input, Button, Divider } from '@nextui-org/react';
-import { Eye, EyeOff, Shield } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSearchParams } from 'next/navigation';
+import logoLight from '@/images/logo_light.png';
+import logoDark from '@/images/logo_dark.png';
 
 function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [theme, setTheme] = useState('light');
   const { login } = useAuth();
   const searchParams = useSearchParams();
 
   // Get redirect URL from search params
   const fromUrl = searchParams?.get('from');
+
+
+  useEffect(() => {
+    const themeLocal = localStorage.getItem('theme');
+    if (themeLocal) {
+      setTheme(themeLocal);
+    } 
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,15 +42,22 @@ function LoginForm() {
     }
   };
 
+  // Determine logo based on theme, default to light if theme is not yet loaded
+  const logoSrc = theme === 'dark' ? logoDark.src : logoLight.src;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col gap-1 items-center pt-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Shield className="w-8 h-8 text-primary" />
-            <h1 className="text-2xl font-bold">DMM Demo</h1>
+          <div className="flex items-center justify-center mb-2">
+            <img
+              src={logoSrc}
+              alt="DMM Logo"
+              className="h-10 w-auto"
+              style={{ maxWidth: '200px' }}
+            />
           </div>
-          <p className="text-sm text-default-500">Dezinformasyonla Mücadele Merkezi - Demo Uygulaması</p>
+          <p className="text-sm text-default-500">Dezenformasyonla Mücadele Merkezi</p>
         </CardHeader>
         <Divider />
         <CardBody className="py-8 px-6">
