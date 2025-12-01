@@ -423,9 +423,41 @@ export async function PUT(
     if (sourceType !== undefined) updateData.sourceType = sourceType;
     if (sourceUrl !== undefined) updateData.sourceUrl = sourceUrl;
 
+    // Status güncellemesi - rol bazlı kontroller
+    if (status !== undefined) {
+      // ADMIN her zaman status güncelleyebilir
+      if (currentUser.role === 'ADMIN') {
+        updateData.status = status;
+      }
+      // LEGAL_PERSONNEL: HUKUK_INCELEMESI -> SON_KONTROL geçişi yapabilir
+      else if (currentUser.role === 'LEGAL_PERSONNEL' && 
+               existingCase.status === 'HUKUK_INCELEMESI' && 
+               status === 'SON_KONTROL') {
+        updateData.status = status;
+      }
+      // IDP_PERSONNEL: SON_KONTROL -> RAPOR_URETIMI, RAPOR_URETIMI -> KURUM_BEKLENIYOR geçişleri yapabilir
+      else if (currentUser.role === 'IDP_PERSONNEL' && 
+               ((existingCase.status === 'SON_KONTROL' && status === 'RAPOR_URETIMI') ||
+                (existingCase.status === 'RAPOR_URETIMI' && status === 'KURUM_BEKLENIYOR'))) {
+        updateData.status = status;
+      }
+      // INSTITUTION_USER: KURUM_BEKLENIYOR -> TAMAMLANDI geçişi yapabilir
+      else if (currentUser.role === 'INSTITUTION_USER' && 
+               existingCase.status === 'KURUM_BEKLENIYOR' && 
+               status === 'TAMAMLANDI') {
+        updateData.status = status;
+      }
+      // Vaka sahibi IDP_PERSONNEL ise IDP_FORM -> HUKUK_INCELEMESI geçişi yapabilir
+      else if (existingCase.createdById === currentUser.id && 
+               currentUser.role === 'IDP_PERSONNEL' &&
+               existingCase.status === 'IDP_FORM' && 
+               status === 'HUKUK_INCELEMESI') {
+        updateData.status = status;
+      }
+    }
+
     // Rol bazlı güncelleme alanları
     if (currentUser.role === 'ADMIN' || existingCase.createdById === currentUser.id) {
-      if (status !== undefined) updateData.status = status;
       if (idpAssessment !== undefined) updateData.idpAssessment = idpAssessment;
       if (idpNotes !== undefined) updateData.idpNotes = idpNotes;
       if (newsHeadline !== undefined) updateData.newsHeadline = newsHeadline;

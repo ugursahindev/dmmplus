@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   Card,
   CardBody,
@@ -120,6 +120,7 @@ const priorityLabels: Record<string, string> = {
 export default function CaseDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, token } = useAuth();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [caseData, setCaseData] = useState<CaseDetail | null>(null);
@@ -131,7 +132,12 @@ export default function CaseDetailPage() {
 
   useEffect(() => {
     fetchCase();
-  }, [params.id]);
+    // URL'den tab parametresini kontrol et
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [params.id, searchParams]);
 
   const fetchCase = async () => {
     try {
@@ -153,6 +159,8 @@ export default function CaseDetailPage() {
   };
 
   const handleDownloadReport = async () => {
+    if (!caseData) return;
+    
     try {
       toast.loading('Rapor hazırlanıyor...');
       const blob = await generateCaseReportWithTemplate(caseData);
@@ -225,8 +233,15 @@ export default function CaseDetailPage() {
       console.log('Sending update payload:', updatePayload);
       await api.updateCase(token!, Number(params.id), updatePayload);
       toast.success('İşlem başarıyla tamamlandı');
-      fetchCase();
-      onClose();
+      
+      // Hukuki değerlendirme tamamlandıktan sonra /legal sayfasına yönlendir
+      if (actionType === 'legal_review') {
+        onClose();
+        router.push('/legal');
+      } else {
+        fetchCase();
+        onClose();
+      }
     } catch (error: any) {
       console.error('Update error:', error);
       toast.error(error.message || 'İşlem sırasında hata oluştu');
@@ -250,6 +265,12 @@ export default function CaseDetailPage() {
   }
 
   const canEdit = user.role === 'ADMIN' || user.role === 'IDP_PERSONNEL';
+  // İşlemler sekmesi için erişim kontrolü - her rol kendi işlemlerini yapabilir
+  const canAccessActions = 
+    (user.role === 'IDP_PERSONNEL' && ['IDP_FORM', 'SON_KONTROL', 'RAPOR_URETIMI'].includes(caseData.status)) ||
+    (user.role === 'LEGAL_PERSONNEL' && caseData.status === 'HUKUK_INCELEMESI') ||
+    (user.role === 'INSTITUTION_USER' && caseData.status === 'KURUM_BEKLENIYOR') ||
+    user.role === 'ADMIN';
   const StatusIcon = statusIcons[caseData.status] || FileText;
 
   return (
@@ -520,7 +541,7 @@ export default function CaseDetailPage() {
             </Card>
           </Tab>
 
-          <Tab key="actions" title="İşlemler" isDisabled={!canEdit}>
+          <Tab key="actions" title="İşlemler" isDisabled={!canAccessActions}>
             <Card className="mt-4">
               <CardBody className="space-y-4">
                 {user.role === 'IDP_PERSONNEL' && caseData.status === 'IDP_FORM' && (
