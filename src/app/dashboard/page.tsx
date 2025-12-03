@@ -30,10 +30,11 @@ interface Stats {
 
 const statusLabels: Record<string, string> = {
   IDP_FORM: 'IDP Formu',
-  HUKUK_INCELEMESI: 'Hukuk İncelemesi',
-  SON_KONTROL: 'Son Kontrol',
-  RAPOR_URETIMI: 'Rapor Üretimi',
+  ADMIN_ONAYI_BEKLENIYOR: 'Admin Onayı Bekleniyor',
   KURUM_BEKLENIYOR: 'Kurum Bekleniyor',
+  IDP_UZMAN_GORUSU: 'IDP Uzman Görüşü',
+  HUKUK_INCELEMESI: 'Hukuk İncelemesi',
+  IDP_SON_KONTROL: 'IDP Son Kontrol',
   TAMAMLANDI: 'Tamamlandı',
 };
 
@@ -46,10 +47,11 @@ const priorityColors: Record<string, 'default' | 'primary' | 'warning' | 'danger
 
 const statusColors: Record<string, 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger'> = {
   IDP_FORM: 'default',
-  HUKUK_INCELEMESI: 'primary',
-  SON_KONTROL: 'secondary',
-  RAPOR_URETIMI: 'warning',
+  ADMIN_ONAYI_BEKLENIYOR: 'warning',
   KURUM_BEKLENIYOR: 'warning',
+  IDP_UZMAN_GORUSU: 'primary',
+  HUKUK_INCELEMESI: 'primary',
+  IDP_SON_KONTROL: 'secondary',
   TAMAMLANDI: 'success',
 };
 
@@ -147,10 +149,10 @@ export default function DashboardPage() {
                         <TableCell>
                           <Chip
                             size="sm"
-                            color={statusColors[caseItem.status]}
+                            color={statusColors[caseItem.status] || 'default'}
                             variant="flat"
                           >
-                            {statusLabels[caseItem.status]}
+                            {statusLabels[caseItem.status] || caseItem.status}
                           </Chip>
                         </TableCell>
                         <TableCell>
