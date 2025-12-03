@@ -340,10 +340,11 @@ export default function CasesPage() {
           >
             <SelectItem key="all" value="">Tümü</SelectItem>
             <SelectItem key="IDP_FORM" value="IDP_FORM">IDP Formu</SelectItem>
-            <SelectItem key="HUKUK_INCELEMESI" value="HUKUK_INCELEMESI">Hukuk İncelemesi</SelectItem>
-            <SelectItem key="SON_KONTROL" value="SON_KONTROL">Son Kontrol</SelectItem>
-            <SelectItem key="RAPOR_URETIMI" value="RAPOR_URETIMI">Rapor Üretimi</SelectItem>
+            <SelectItem key="ADMIN_ONAYI_BEKLENIYOR" value="ADMIN_ONAYI_BEKLENIYOR">Admin Onayı Bekleniyor</SelectItem>
             <SelectItem key="KURUM_BEKLENIYOR" value="KURUM_BEKLENIYOR">Kurum Bekleniyor</SelectItem>
+            <SelectItem key="IDP_UZMAN_GORUSU" value="IDP_UZMAN_GORUSU">IDP Uzman Görüşü</SelectItem>
+            <SelectItem key="HUKUK_INCELEMESI" value="HUKUK_INCELEMESI">Hukuk İncelemesi</SelectItem>
+            <SelectItem key="IDP_SON_KONTROL" value="IDP_SON_KONTROL">IDP Son Kontrol</SelectItem>
             <SelectItem key="TAMAMLANDI" value="TAMAMLANDI">Tamamlandı</SelectItem>
           </Select>
           <Select
