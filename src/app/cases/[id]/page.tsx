@@ -92,8 +92,7 @@ interface CaseDetail {
   submittingUnit?: string;
   preparedBy?: string;
   disinformationType?: string;
-  recommendationDMM?: string;
-  recommendationDMK?: string;
+  recommendation?: string;
   
   createdById: number;
   createdAt: string;
@@ -270,10 +269,9 @@ export default function CaseDetailPage() {
             return;
           }
           updates.finalNotes = actionData.finalNotes;
-          // Öneri ve teklifler tek alanda, hem DMM hem DMK'ya aynı değeri yazıyoruz
-          const recommendations = actionData.recommendations || '';
-          updates.recommendationDMM = recommendations;
-          updates.recommendationDMK = recommendations;
+          // Öneri ve teklifler tek alanda
+          updates.recommendation = actionData.recommendations || '';
+          updates.finalApproval = true;
           updates.status = 'ADMIN_ONAYI_BEKLENIYOR';
           break;
         case 'legal_review':
@@ -534,23 +532,10 @@ export default function CaseDetailPage() {
                 )}
 
                 {/* Öneri ve Teklifler */}
-                {(caseData.recommendationDMM || caseData.recommendationDMK) && (
+                {caseData.recommendation && (
                   <div className="bg-default-50 p-4 rounded-lg">
                     <h3 className="text-md font-semibold mb-4">Öneri ve Teklifler</h3>
-                    <div className="space-y-4">
-                      {caseData.recommendationDMM && (
-                        <div>
-                          <p className="text-sm text-default-500 mb-2">DMM için Gereği</p>
-                          <p className="text-sm whitespace-pre-wrap">{caseData.recommendationDMM}</p>
-                        </div>
-                      )}
-                      {caseData.recommendationDMK && (
-                        <div>
-                          <p className="text-sm text-default-500 mb-2">DMK için Gereği</p>
-                          <p className="text-sm whitespace-pre-wrap">{caseData.recommendationDMK}</p>
-                        </div>
-                      )}
-                    </div>
+                    <p className="text-sm whitespace-pre-wrap">{caseData.recommendation}</p>
                   </div>
                 )}
 
@@ -637,21 +622,10 @@ export default function CaseDetailPage() {
                 )}
 
                 {/* Öneriler */}
-                {(caseData.recommendationDMM || caseData.recommendationDMK) && (
+                {caseData.recommendation && (
                   <div className="bg-default-50 p-4 rounded-lg">
-                    <h4 className="font-semibold mb-2">Öneriler</h4>
-                    {caseData.recommendationDMM && (
-                      <div className="mb-3">
-                        <p className="text-sm text-default-500 mb-1">DMM için Öneri:</p>
-                        <p className="text-sm whitespace-pre-wrap">{caseData.recommendationDMM}</p>
-                      </div>
-                    )}
-                    {caseData.recommendationDMK && (
-                      <div>
-                        <p className="text-sm text-default-500 mb-1">DMK için Öneri:</p>
-                        <p className="text-sm whitespace-pre-wrap">{caseData.recommendationDMK}</p>
-                      </div>
-                    )}
+                    <h4 className="font-semibold mb-2">Öneri ve Teklifler</h4>
+                    <p className="text-sm whitespace-pre-wrap">{caseData.recommendation}</p>
                   </div>
                 )}
 

@@ -281,6 +281,19 @@ export async function POST(request: NextRequest) {
       geographicScope,
       sourceType,
       sourceUrl,
+      // Additional news fields
+      newsHeadline,
+      newspaperAuthor,
+      newsSummary,
+      ministryInfo,
+      relatedMinistry,
+      submittedTo,
+      submittingUnit,
+      preparedBy,
+      disinformationType,
+      // IDP Form fields
+      idpAssessment,
+      idpNotes,
     } = body;
 
     // Gerekli alanları kontrol et
@@ -315,6 +328,19 @@ export async function POST(request: NextRequest) {
         geographicScope,
         sourceType,
         sourceUrl,
+        // Additional news fields
+        newsHeadline: newsHeadline || null,
+        newspaperAuthor: newspaperAuthor || null,
+        newsSummary: newsSummary || null,
+        ministryInfo: ministryInfo || null,
+        relatedMinistry: relatedMinistry || null,
+        submittedTo: submittedTo || null,
+        submittingUnit: submittingUnit || null,
+        preparedBy: preparedBy || null,
+        disinformationType: disinformationType || null,
+        // IDP Form fields
+        idpAssessment: idpAssessment || null,
+        idpNotes: idpNotes || null,
         createdById: currentUser.id,
       },
       include: {

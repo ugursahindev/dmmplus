@@ -429,8 +429,7 @@ export async function PUT(
       disinformationType,
       expertEvaluation,
       legalEvaluation,
-      recommendationDMM,
-      recommendationDMK,
+      recommendation,
     } = body;
 
     // Güncelleme verilerini hazırla
@@ -463,6 +462,16 @@ export async function PUT(
             (existingCase.status === 'HUKUK_INCELEMESI' && status === 'IDP_SON_KONTROL') ||
             (existingCase.status === 'IDP_SON_KONTROL' && status === 'ADMIN_ONAYI_BEKLENIYOR')) {
           updateData.status = status;
+          // IDP_UZMAN_GORUSU -> ADMIN_ONAYI_BEKLENIYOR geçişinde expertEvaluation kaydedilir
+          if (existingCase.status === 'IDP_UZMAN_GORUSU' && status === 'ADMIN_ONAYI_BEKLENIYOR' && expertEvaluation !== undefined) {
+            updateData.expertEvaluation = expertEvaluation;
+          }
+          // IDP_SON_KONTROL -> ADMIN_ONAYI_BEKLENIYOR geçişinde finalApproval kaydedilir
+          if (existingCase.status === 'IDP_SON_KONTROL' && status === 'ADMIN_ONAYI_BEKLENIYOR' && finalApproval !== undefined) {
+            updateData.finalApproval = finalApproval;
+            updateData.finalReviewerId = currentUser.id;
+            updateData.finalReviewDate = new Date();
+          }
         }
       }
       // LEGAL_PERSONNEL: HUKUK_INCELEMESI -> IDP_SON_KONTROL geçişi yapabilir
@@ -504,16 +513,19 @@ export async function PUT(
     // IDP_PERSONNEL: IDP_SON_KONTROL durumunda son kontrol notu ve öneriler ekleyebilir
     if (currentUser.role === 'IDP_PERSONNEL' && existingCase.status === 'IDP_SON_KONTROL') {
       if (finalNotes !== undefined) updateData.finalNotes = finalNotes;
-      if (recommendationDMM !== undefined) updateData.recommendationDMM = recommendationDMM;
-      if (recommendationDMK !== undefined) updateData.recommendationDMK = recommendationDMK;
+      if (recommendation !== undefined) updateData.recommendation = recommendation;
+      if (finalApproval !== undefined) {
+        updateData.finalApproval = finalApproval;
+        updateData.finalReviewerId = currentUser.id;
+        updateData.finalReviewDate = new Date();
+      }
     }
     
     // ADMIN her zaman tüm alanları düzenleyebilir
     if (currentUser.role === 'ADMIN') {
       if (expertEvaluation !== undefined) updateData.expertEvaluation = expertEvaluation;
       if (legalEvaluation !== undefined) updateData.legalEvaluation = legalEvaluation;
-      if (recommendationDMM !== undefined) updateData.recommendationDMM = recommendationDMM;
-      if (recommendationDMK !== undefined) updateData.recommendationDMK = recommendationDMK;
+      if (recommendation !== undefined) updateData.recommendation = recommendation;
     }
 
     // Hukuk personeli alanları

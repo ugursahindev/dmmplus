@@ -237,8 +237,7 @@ export interface UpdateCaseData {
   disinformationType?: string;
   expertEvaluation?: string;
   legalEvaluation?: string;
-  recommendationDMM?: string;
-  recommendationDMK?: string;
+  recommendation?: string;
 }
 
 export interface TaskComment {

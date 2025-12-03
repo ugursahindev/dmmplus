@@ -96,8 +96,7 @@ model Case {
   disinformationType String?
   expertEvaluation   String?
   legalEvaluation    String?
-  recommendationDMM  String?
-  recommendationDMK  String?
+  recommendation     String?
 
   // IDP Form fields
   idpAssessment String?

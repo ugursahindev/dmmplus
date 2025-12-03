@@ -127,6 +127,14 @@ export default function NewCasePage() {
       }
     }
 
+    // Dosya formatlarını kontrol et
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    const invalidFiles = selectedFiles.filter(file => !allowedTypes.includes(file.type));
+    if (invalidFiles.length > 0) {
+      toast.error('Sadece PNG, JPG ve JPEG formatları desteklenmektedir');
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Create the case
@@ -145,7 +153,39 @@ export default function NewCasePage() {
       
       const response = await api.createCase(token!, caseData);
       
-      toast.success('Vaka başarıyla oluşturuldu');
+      // Dosyaları yükle
+      if (selectedFiles.length > 0) {
+        try {
+          const formData = new FormData();
+          selectedFiles.forEach(file => {
+            formData.append('files', file);
+          });
+
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+          const uploadResponse = await fetch(`${apiUrl}/api/cases/${response.case.id}/files`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            body: formData,
+          });
+
+          if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json();
+            console.error('File upload error:', errorData);
+            // Vaka oluşturuldu ama dosyalar yüklenemedi - kullanıcıya bilgi ver
+            toast.error('Vaka oluşturuldu ancak bazı dosyalar yüklenemedi');
+          } else {
+            toast.success('Vaka ve dosyalar başarıyla oluşturuldu');
+          }
+        } catch (fileError) {
+          console.error('File upload error:', fileError);
+          // Vaka oluşturuldu ama dosyalar yüklenemedi
+          toast.error('Vaka oluşturuldu ancak dosyalar yüklenemedi');
+        }
+      } else {
+        toast.success('Vaka başarıyla oluşturuldu');
+      }
       router.push(`/cases/${response.case.id}`);
     } catch (error: any) {
       toast.error(error.message || 'Vaka oluşturulurken hata oluştu');
@@ -177,7 +217,19 @@ export default function NewCasePage() {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setSelectedFiles(prev => [...prev, ...files]);
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    const validFiles = files.filter(file => allowedTypes.includes(file.type));
+    
+    if (validFiles.length !== files.length) {
+      toast.error('Sadece PNG, JPG ve JPEG formatları desteklenmektedir');
+    }
+    
+    if (validFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...validFiles]);
+    }
+    
+    // Input'u sıfırla
+    e.target.value = '';
   };
 
   const removeFile = (index: number) => {
@@ -447,7 +499,7 @@ export default function NewCasePage() {
                     <input
                       type="file"
                       multiple
-                      accept="image/*,.pdf,.doc,.docx"
+                      accept="image/png,image/jpeg,image/jpg"
                       onChange={handleFileSelect}
                       className="hidden"
                       id="file-upload"
