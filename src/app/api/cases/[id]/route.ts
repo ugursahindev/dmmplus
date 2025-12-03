@@ -179,6 +179,12 @@ export async function GET(
             fullName: true,
           },
         },
+        targetInstitution: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         files: {
           select: {
             id: true,
@@ -307,6 +313,8 @@ export async function PUT(
         id: true,
         role: true,
         active: true,
+        institutionId: true,
+        institution: true,
       },
     });
 
@@ -341,6 +349,8 @@ export async function PUT(
         id: true,
         status: true,
         createdById: true,
+        targetInstitutionId: true,
+        targetMinistry: true,
       },
     });
 
@@ -352,11 +362,17 @@ export async function PUT(
     }
 
     // Yetki kontrolü: Sadece vaka sahibi, ADMIN veya ilgili rol kullanıcıları düzenleyebilir
+    // INSTITUTION_USER sadece kendi kurumuna gönderilen vakalara yanıt verebilir
+    const isInstitutionUserCase = currentUser.role === 'INSTITUTION_USER' && 
+      existingCase.status === 'KURUM_BEKLENIYOR' &&
+      (existingCase.targetInstitutionId === currentUser.institutionId ||
+       existingCase.targetMinistry === currentUser.institution);
+    
     const canEdit = 
       currentUser.role === 'ADMIN' ||
       existingCase.createdById === currentUser.id ||
       (currentUser.role === 'LEGAL_PERSONNEL' && ['HUKUK_INCELEMESI', 'SON_KONTROL'].includes(existingCase.status)) ||
-      (currentUser.role === 'INSTITUTION_USER' && existingCase.status === 'KURUM_BEKLENIYOR');
+      isInstitutionUserCase;
 
     if (!canEdit) {
       return NextResponse.json(
@@ -442,8 +458,8 @@ export async function PUT(
                 (existingCase.status === 'RAPOR_URETIMI' && status === 'KURUM_BEKLENIYOR'))) {
         updateData.status = status;
       }
-      // INSTITUTION_USER: KURUM_BEKLENIYOR -> TAMAMLANDI geçişi yapabilir
-      else if (currentUser.role === 'INSTITUTION_USER' && 
+      // INSTITUTION_USER: KURUM_BEKLENIYOR -> TAMAMLANDI geçişi yapabilir (sadece kendi kurumuna gönderilen vakalar için)
+      else if (isInstitutionUserCase && 
                existingCase.status === 'KURUM_BEKLENIYOR' && 
                status === 'TAMAMLANDI') {
         updateData.status = status;
@@ -508,8 +524,8 @@ export async function PUT(
       if (externalReport !== undefined) updateData.externalReport = externalReport;
     }
 
-    // Kurum kullanıcısı alanları
-    if (currentUser.role === 'INSTITUTION_USER' || currentUser.role === 'ADMIN') {
+    // Kurum kullanıcısı alanları (sadece kendi kurumuna gönderilen vakalar için)
+    if (isInstitutionUserCase || currentUser.role === 'ADMIN') {
       if (institutionResponse !== undefined) updateData.institutionResponse = institutionResponse;
       if (correctiveInfo !== undefined) updateData.correctiveInfo = correctiveInfo;
       if (institutionResponse !== undefined) {

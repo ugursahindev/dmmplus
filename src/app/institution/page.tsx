@@ -89,7 +89,9 @@ export default function InstitutionPage() {
     try {
       setIsLoading(true);
       
-      const response = await fetch('/api/cases?limit=50', {
+      // API zaten institution kullanıcıları için filtreleme yapıyor
+      // ADMIN için tüm vakaları, INSTITUTION_USER için sadece kendi kurumuna gönderilen vakaları göster
+      const response = await fetch('/api/cases?limit=100', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -103,15 +105,11 @@ export default function InstitutionPage() {
       const data = await response.json();
       const institutionCases = data.cases || [];
       
-      // For institution users, filter by their institution and show only relevant statuses
-      const filteredCases = user?.role === 'INSTITUTION_USER' && user?.institutionId
-        ? institutionCases.filter((c: InstitutionCase) => 
-            (c.targetInstitutionId === user.institutionId || c.targetMinistry === user.institution) && 
-            ['KURUM_BEKLENIYOR', 'TAMAMLANDI'].includes(c.status)
-          )
-        : institutionCases.filter((c: InstitutionCase) => 
-            ['KURUM_BEKLENIYOR', 'TAMAMLANDI'].includes(c.status)
-          );
+      // API zaten filtrelediği için direkt kullan
+      // Sadece KURUM_BEKLENIYOR ve TAMAMLANDI durumlarını göster
+      const filteredCases = institutionCases.filter((c: InstitutionCase) => 
+        ['KURUM_BEKLENIYOR', 'TAMAMLANDI'].includes(c.status)
+      );
       
       setCases(filteredCases);
       
@@ -219,7 +217,9 @@ export default function InstitutionPage() {
                 <Eye className="w-4 h-4" />
               </Button>
             </Tooltip>
-            {!item.institutionResponse && user?.role === 'INSTITUTION_USER' && (
+            {!item.institutionResponse && 
+             user?.role === 'INSTITUTION_USER' && 
+             (item.targetInstitutionId === user?.institutionId || item.targetMinistry === user?.institution) && (
               <Tooltip content="Yanıtla">
                 <Button
                   isIconOnly
@@ -247,7 +247,10 @@ export default function InstitutionPage() {
           <div>
             <h1 className="text-2xl font-bold">Kurum Yanıtları</h1>
             {user?.institution && (
-              <p className="text-default-500">{user.institution}</p>
+              <p className="text-default-500">
+                {user.institution}
+                {user?.institutionId && ` (ID: ${user.institutionId})`}
+              </p>
             )}
           </div>
         </div>

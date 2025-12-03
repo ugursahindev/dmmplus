@@ -72,6 +72,11 @@ interface CaseDetail {
   internalReport?: string;
   externalReport?: string;
   targetMinistry?: string;
+  targetInstitutionId?: number;
+  targetInstitution?: {
+    id: number;
+    name: string;
+  };
   institutionResponse?: string;
   correctiveInfo?: string;
   
@@ -292,10 +297,16 @@ export default function CaseDetailPage() {
 
   const canEdit = user.role === 'ADMIN' || user.role === 'IDP_PERSONNEL';
   // İşlemler sekmesi için erişim kontrolü - her rol kendi işlemlerini yapabilir
+  // INSTITUTION_USER sadece kendi kurumuna gönderilen vakalar için erişebilir
+  const isInstitutionUserCase = user.role === 'INSTITUTION_USER' && 
+    caseData.status === 'KURUM_BEKLENIYOR' &&
+    (caseData.targetInstitutionId === user.institutionId || 
+     caseData.targetMinistry === user.institution);
+  
   const canAccessActions = 
     (user.role === 'IDP_PERSONNEL' && ['IDP_FORM', 'SON_KONTROL', 'RAPOR_URETIMI'].includes(caseData.status)) ||
     (user.role === 'LEGAL_PERSONNEL' && caseData.status === 'HUKUK_INCELEMESI') ||
-    (user.role === 'INSTITUTION_USER' && caseData.status === 'KURUM_BEKLENIYOR') ||
+    isInstitutionUserCase ||
     user.role === 'ADMIN';
   const StatusIcon = statusIcons[caseData.status] || FileText;
 
@@ -610,7 +621,7 @@ export default function CaseDetailPage() {
                   </Button>
                 )}
 
-                {user.role === 'INSTITUTION_USER' && caseData.status === 'KURUM_BEKLENIYOR' && (
+                {isInstitutionUserCase && (
                   <Button
                     color="primary"
                     startContent={<Building2 className="w-4 h-4" />}

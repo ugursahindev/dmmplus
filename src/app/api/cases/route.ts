@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
         id: true,
         role: true,
         active: true,
+        institutionId: true,
+        institution: true,
       },
     });
 
@@ -144,6 +146,15 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
+          },
+        },
+        institutionResponse: true,
+        institutionResponseDate: true,
+        institutionResponder: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true,
           },
         },
         _count: {
