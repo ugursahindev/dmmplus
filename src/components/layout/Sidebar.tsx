@@ -13,7 +13,6 @@ import {
   ChevronRight,
   Shield,
   Gavel,
-  Building2,
   Settings,
   CheckSquare,
   MessageSquare,
@@ -67,12 +66,6 @@ const menuItems: MenuItem[] = [
     label: 'Hukuki İncelemeler',
     href: '/legal',
     roles: ['ADMIN', 'LEGAL_PERSONNEL'],
-  },
-  {
-    icon: <Building2 className="w-5 h-5" />,
-    label: 'Kurum Yanıtları',
-    href: '/institution',
-    roles: ['ADMIN', 'INSTITUTION_USER'],
   },
   {
     icon: <CheckSquare className="w-5 h-5" />,

@@ -12,7 +12,7 @@ const determineRedirectPath = (role?: string | null) => {
     case 'LEGAL_PERSONNEL':
       return '/legal';
     case 'INSTITUTION_USER':
-      return '/institution';
+      return '/cases/pending';
     default:
       return '/dashboard';
   }

@@ -21,7 +21,7 @@ export default function HomePage() {
             router.push('/legal');
             break;
           case 'INSTITUTION_USER':
-            router.push('/institution');
+            router.push('/cases/pending');
             break;
         }
       } else {
