@@ -12,7 +12,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
-  Gavel,
   Settings,
   CheckSquare,
   MessageSquare,
@@ -60,12 +59,6 @@ const menuItems: MenuItem[] = [
         icon: <Clock className="w-4 h-4" />,
       },
     ],
-  },
-  {
-    icon: <Gavel className="w-5 h-5" />,
-    label: 'Hukuki İncelemeler',
-    href: '/legal',
-    roles: ['ADMIN', 'LEGAL_PERSONNEL'],
   },
   {
     icon: <CheckSquare className="w-5 h-5" />,

@@ -18,7 +18,7 @@ export default function HomePage() {
             router.push('/dashboard');
             break;
           case 'LEGAL_PERSONNEL':
-            router.push('/legal');
+            router.push('/cases/pending');
             break;
           case 'INSTITUTION_USER':
             router.push('/cases/pending');
