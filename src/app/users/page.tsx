@@ -99,9 +99,18 @@ const roleColors: Record<string, 'default' | 'primary' | 'secondary' | 'success'
   default: 'default', // Fallback color
 };
 
+interface Institution {
+  id: number;
+  name: string;
+  type: string | null;
+  description: string | null;
+  active: boolean;
+}
+
 export default function UsersPage() {
   const { token } = useAuth();
   const [allUsers, setAllUsers] = useState<UserData[]>([]); // Tüm kullanıcılar
+  const [institutions, setInstitutions] = useState<Institution[]>([]); // Kurumlar
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
@@ -128,6 +137,7 @@ export default function UsersPage() {
   useEffect(() => {
     if (token && token.trim()) {
       fetchAllUsers();
+      fetchInstitutions();
     }
   }, [token]);
 
@@ -176,6 +186,30 @@ export default function UsersPage() {
       toast.error('Kullanıcılar yüklenirken hata oluştu');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchInstitutions = async () => {
+    if (!token || !token.trim()) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/institutions', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setInstitutions(data.institutions || []);
+      } else {
+        console.error('Failed to fetch institutions');
+      }
+    } catch (error) {
+      console.error('Failed to fetch institutions:', error);
     }
   };
 
@@ -624,13 +658,24 @@ export default function UsersPage() {
                   ))}
                 </Select>
                 {formData.role === 'INSTITUTION_USER' && (
-                  <Input
+                  <Select
                     label="Kurum"
-                    placeholder="Bakanlık/Kurum adı"
-                    value={formData.institution}
-                    onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
+                    placeholder="Kurum seçin"
+                    selectedKeys={formData.institution ? [formData.institution] : []}
+                    onSelectionChange={(keys) => {
+                      const selectedKey = Array.from(keys)[0] as string;
+                      setFormData({ ...formData, institution: selectedKey || '' });
+                    }}
                     isRequired
-                  />
+                  >
+                    {institutions
+                      .filter(inst => inst.active)
+                      .map((institution) => (
+                        <SelectItem key={institution.name} value={institution.name}>
+                          {institution.name}
+                        </SelectItem>
+                      ))}
+                  </Select>
                 )}
                 <Switch
                   isSelected={formData.active}
@@ -700,12 +745,24 @@ export default function UsersPage() {
                   ))}
                 </Select>
                 {formData.role === 'INSTITUTION_USER' && (
-                  <Input
+                  <Select
                     label="Kurum"
-                    value={formData.institution}
-                    onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
+                    placeholder="Kurum seçin"
+                    selectedKeys={formData.institution ? [formData.institution] : []}
+                    onSelectionChange={(keys) => {
+                      const selectedKey = Array.from(keys)[0] as string;
+                      setFormData({ ...formData, institution: selectedKey || '' });
+                    }}
                     isRequired
-                  />
+                  >
+                    {institutions
+                      .filter(inst => inst.active)
+                      .map((institution) => (
+                        <SelectItem key={institution.name} value={institution.name}>
+                          {institution.name}
+                        </SelectItem>
+                      ))}
+                  </Select>
                 )}
                 <Switch
                   isSelected={formData.active}

@@ -321,8 +321,9 @@ export default function CaseDetailPage() {
       await api.updateCase(token!, Number(params.id), updatePayload);
       toast.success('İşlem başarıyla tamamlandı');
       
-        fetchCase();
+      fetchCase();
       onClose();
+      setActiveTab('details');
     } catch (error: any) {
       console.error('Update error:', error);
       toast.error(error.message || 'İşlem sırasında hata oluştu');
