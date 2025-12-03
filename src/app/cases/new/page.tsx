@@ -91,10 +91,6 @@ export default function NewCasePage() {
     submittingUnit: '',
     preparedBy: '',
     disinformationType: '',
-    expertEvaluation: '',
-    legalEvaluation: '',
-    recommendationDMM: '',
-    recommendationDMK: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -418,43 +414,6 @@ export default function NewCasePage() {
                 ))}
               </Select>
 
-              {/* Değerlendirmeler */}
-              <div className="space-y-4">
-                <Textarea
-                  label="Uzman Değerlendirme Notu"
-                  placeholder="Uzman değerlendirmesini girin"
-                  value={formData.expertEvaluation}
-                  onChange={(e) => handleChange('expertEvaluation', e.target.value)}
-                  minRows={4}
-                />
-
-                <Textarea
-                  label="Hukuki Değerlendirme"
-                  placeholder="Hukuki değerlendirmeyi girin"
-                  value={formData.legalEvaluation}
-                  onChange={(e) => handleChange('legalEvaluation', e.target.value)}
-                  minRows={3}
-                />
-              </div>
-
-              {/* Öneri ve Teklifler */}
-              <div className="bg-default-50 p-4 rounded-lg space-y-4">
-                <h3 className="text-md font-semibold">Öneri ve Teklifler</h3>
-                <Textarea
-                  label="DMM için Gereği"
-                  placeholder="DMM için öneriler..."
-                  value={formData.recommendationDMM}
-                  onChange={(e) => handleChange('recommendationDMM', e.target.value)}
-                  minRows={3}
-                />
-                <Textarea
-                  label="DMK için Gereği"
-                  placeholder="Dijital Medya Koordinatörlüğü için öneriler..."
-                  value={formData.recommendationDMK}
-                  onChange={(e) => handleChange('recommendationDMK', e.target.value)}
-                  minRows={3}
-                />
-              </div>
 
               <Divider />
 

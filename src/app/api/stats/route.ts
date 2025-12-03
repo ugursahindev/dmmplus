@@ -47,14 +47,17 @@ export async function GET(request: NextRequest) {
     
     switch (currentUser.role) {
       case 'LEGAL_PERSONNEL':
-        statusFilter = ['HUKUK_INCELEMESI', 'SON_KONTROL', 'RAPOR_URETIMI', 'KURUM_BEKLENIYOR', 'TAMAMLANDI'];
+        statusFilter = ['HUKUK_INCELEMESI', 'TAMAMLANDI'];
         break;
       case 'INSTITUTION_USER':
-        statusFilter = ['KURUM_BEKLENIYOR'];
+        statusFilter = ['KURUM_BEKLENIYOR', 'TAMAMLANDI'];
+        break;
+      case 'IDP_PERSONNEL':
+        statusFilter = ['IDP_FORM', 'IDP_UZMAN_GORUSU', 'IDP_SON_KONTROL', 'TAMAMLANDI'];
         break;
       default:
-        // ADMIN, IDP_PERSONNEL ve diğer roller için tüm durumlar
-        statusFilter = ['IDP_FORM', 'HUKUK_INCELEMESI', 'SON_KONTROL', 'RAPOR_URETIMI', 'KURUM_BEKLENIYOR', 'TAMAMLANDI'];
+        // ADMIN için tüm durumlar
+        statusFilter = ['IDP_FORM', 'ADMIN_ONAYI_BEKLENIYOR', 'KURUM_BEKLENIYOR', 'IDP_UZMAN_GORUSU', 'HUKUK_INCELEMESI', 'IDP_SON_KONTROL', 'TAMAMLANDI'];
         break;
     }
 
@@ -107,7 +110,7 @@ export async function GET(request: NextRequest) {
       where: {
         ...baseWhere,
         status: {
-          in: ['HUKUK_INCELEMESI', 'SON_KONTROL', 'RAPOR_URETIMI', 'KURUM_BEKLENIYOR']
+          in: ['ADMIN_ONAYI_BEKLENIYOR', 'KURUM_BEKLENIYOR', 'IDP_UZMAN_GORUSU', 'HUKUK_INCELEMESI', 'IDP_SON_KONTROL']
         }
       }
     });

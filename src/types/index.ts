@@ -2,10 +2,11 @@ export type UserRole = 'ADMIN' | 'IDP_PERSONNEL' | 'LEGAL_PERSONNEL' | 'INSTITUT
 
 export type CaseStatus = 
   | 'IDP_FORM'
-  | 'HUKUK_INCELEMESI'
-  | 'SON_KONTROL'
-  | 'RAPOR_URETIMI'
+  | 'ADMIN_ONAYI_BEKLENIYOR'
   | 'KURUM_BEKLENIYOR'
+  | 'IDP_UZMAN_GORUSU'
+  | 'HUKUK_INCELEMESI'
+  | 'IDP_SON_KONTROL'
   | 'TAMAMLANDI';
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';

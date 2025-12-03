@@ -1,0 +1,11 @@
+Yeni bir entegrasyon yapmamız gerekmektedir. Vakaların işleyiş akışı değişecek. Biraz kapsamlı olduğu için aşama aşama anlatacağım. Bunları yaparken kodu patlatma.
+
+1. IDP_PERSONNEL rollü kullanıcı vaka ekleyecek ve bu aşamada başka bir şey yapamayacak.  
+2. Vaka Adminin önüne düşecek ve Admin tarafından Kurum incelemesi yapılmak üzere kurum personeline gönderilecek. 
+3. Kurumdan cevap gelince vaka yine IDP_PERSONNEL rollü kullanıcıların önüne düşecek. IDP_PERSONNEL Uzman görüşü ekleyecek Vaka Admin'in önüne düşecek. 
+4. Sonrasında Admin Hukuk incelemesi yapılmak üzere gönderecek. 
+5. Hukuk İncelemesi Cevabı gelince Vaka IDP önüne düşecek. IDP son kontrol notu ve öneri ekleyebilcek. Sonra Admin'e düşecek.
+6. Admin vakanın sonlandır e rapor oluştur yetkisine sahip olacak. oluşturulan Rapor indirilebliecek. Admin vaklar sonlandırılsa bile daima onun raporunu indirebiliyor lacak.
+
+
+

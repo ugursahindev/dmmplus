@@ -368,10 +368,16 @@ export async function PUT(
       (existingCase.targetInstitutionId === currentUser.institutionId ||
        existingCase.targetMinistry === currentUser.institution);
     
+    // IDP_PERSONNEL sadece IDP_FORM durumunda kendi vakasını düzenleyebilir
+    const isIdpPersonnelOwnCase = currentUser.role === 'IDP_PERSONNEL' && 
+      existingCase.createdById === currentUser.id &&
+      existingCase.status === 'IDP_FORM';
+    
     const canEdit = 
       currentUser.role === 'ADMIN' ||
-      existingCase.createdById === currentUser.id ||
-      (currentUser.role === 'LEGAL_PERSONNEL' && ['HUKUK_INCELEMESI', 'SON_KONTROL'].includes(existingCase.status)) ||
+      isIdpPersonnelOwnCase ||
+      (currentUser.role === 'IDP_PERSONNEL' && ['IDP_UZMAN_GORUSU', 'IDP_SON_KONTROL'].includes(existingCase.status)) ||
+      (currentUser.role === 'LEGAL_PERSONNEL' && existingCase.status === 'HUKUK_INCELEMESI') ||
       isInstitutionUserCase;
 
     if (!canEdit) {
@@ -440,41 +446,43 @@ export async function PUT(
     if (sourceType !== undefined) updateData.sourceType = sourceType;
     if (sourceUrl !== undefined) updateData.sourceUrl = sourceUrl;
 
-    // Status güncellemesi - rol bazlı kontroller
+    // Status güncellemesi - rol bazlı kontroller (YENİ AKIŞ)
     if (status !== undefined) {
-      // ADMIN her zaman status güncelleyebilir
+      // ADMIN: IDP_FORM -> KURUM_BEKLENIYOR, ADMIN_ONAYI_BEKLENIYOR -> HUKUK_INCELEMESI, ADMIN_ONAYI_BEKLENIYOR -> TAMAMLANDI
       if (currentUser.role === 'ADMIN') {
-        updateData.status = status;
+        if ((existingCase.status === 'IDP_FORM' && status === 'KURUM_BEKLENIYOR') ||
+            (existingCase.status === 'ADMIN_ONAYI_BEKLENIYOR' && status === 'HUKUK_INCELEMESI') ||
+            (existingCase.status === 'ADMIN_ONAYI_BEKLENIYOR' && status === 'TAMAMLANDI')) {
+          updateData.status = status;
+        }
       }
-      // LEGAL_PERSONNEL: HUKUK_INCELEMESI -> SON_KONTROL geçişi yapabilir
+      // IDP_PERSONNEL: KURUM_BEKLENIYOR -> IDP_UZMAN_GORUSU, IDP_UZMAN_GORUSU -> ADMIN_ONAYI_BEKLENIYOR, HUKUK_INCELEMESI -> IDP_SON_KONTROL, IDP_SON_KONTROL -> ADMIN_ONAYI_BEKLENIYOR
+      else if (currentUser.role === 'IDP_PERSONNEL') {
+        if ((existingCase.status === 'KURUM_BEKLENIYOR' && status === 'IDP_UZMAN_GORUSU') ||
+            (existingCase.status === 'IDP_UZMAN_GORUSU' && status === 'ADMIN_ONAYI_BEKLENIYOR') ||
+            (existingCase.status === 'HUKUK_INCELEMESI' && status === 'IDP_SON_KONTROL') ||
+            (existingCase.status === 'IDP_SON_KONTROL' && status === 'ADMIN_ONAYI_BEKLENIYOR')) {
+          updateData.status = status;
+        }
+      }
+      // LEGAL_PERSONNEL: HUKUK_INCELEMESI -> IDP_SON_KONTROL geçişi yapabilir
       else if (currentUser.role === 'LEGAL_PERSONNEL' && 
                existingCase.status === 'HUKUK_INCELEMESI' && 
-               status === 'SON_KONTROL') {
+               status === 'IDP_SON_KONTROL') {
         updateData.status = status;
       }
-      // IDP_PERSONNEL: SON_KONTROL -> RAPOR_URETIMI, RAPOR_URETIMI -> KURUM_BEKLENIYOR geçişleri yapabilir
-      else if (currentUser.role === 'IDP_PERSONNEL' && 
-               ((existingCase.status === 'SON_KONTROL' && status === 'RAPOR_URETIMI') ||
-                (existingCase.status === 'RAPOR_URETIMI' && status === 'KURUM_BEKLENIYOR'))) {
-        updateData.status = status;
-      }
-      // INSTITUTION_USER: KURUM_BEKLENIYOR -> TAMAMLANDI geçişi yapabilir (sadece kendi kurumuna gönderilen vakalar için)
+      // INSTITUTION_USER: KURUM_BEKLENIYOR -> IDP_UZMAN_GORUSU geçişi yapabilir (sadece kendi kurumuna gönderilen vakalar için)
       else if (isInstitutionUserCase && 
                existingCase.status === 'KURUM_BEKLENIYOR' && 
-               status === 'TAMAMLANDI') {
-        updateData.status = status;
-      }
-      // Vaka sahibi IDP_PERSONNEL ise IDP_FORM -> HUKUK_INCELEMESI geçişi yapabilir
-      else if (existingCase.createdById === currentUser.id && 
-               currentUser.role === 'IDP_PERSONNEL' &&
-               existingCase.status === 'IDP_FORM' && 
-               status === 'HUKUK_INCELEMESI') {
+               status === 'IDP_UZMAN_GORUSU') {
         updateData.status = status;
       }
     }
 
     // Rol bazlı güncelleme alanları
-    if (currentUser.role === 'ADMIN' || existingCase.createdById === currentUser.id) {
+    // IDP_PERSONNEL: IDP_FORM durumunda sadece temel alanları düzenleyebilir
+    if (currentUser.role === 'ADMIN' || 
+        (currentUser.role === 'IDP_PERSONNEL' && existingCase.status === 'IDP_FORM' && existingCase.createdById === currentUser.id)) {
       if (idpAssessment !== undefined) updateData.idpAssessment = idpAssessment;
       if (idpNotes !== undefined) updateData.idpNotes = idpNotes;
       if (newsHeadline !== undefined) updateData.newsHeadline = newsHeadline;
@@ -486,6 +494,22 @@ export async function PUT(
       if (submittingUnit !== undefined) updateData.submittingUnit = submittingUnit;
       if (preparedBy !== undefined) updateData.preparedBy = preparedBy;
       if (disinformationType !== undefined) updateData.disinformationType = disinformationType;
+    }
+    
+    // IDP_PERSONNEL: IDP_UZMAN_GORUSU durumunda uzman görüşü ekleyebilir
+    if (currentUser.role === 'IDP_PERSONNEL' && existingCase.status === 'IDP_UZMAN_GORUSU') {
+      if (expertEvaluation !== undefined) updateData.expertEvaluation = expertEvaluation;
+    }
+    
+    // IDP_PERSONNEL: IDP_SON_KONTROL durumunda son kontrol notu ve öneriler ekleyebilir
+    if (currentUser.role === 'IDP_PERSONNEL' && existingCase.status === 'IDP_SON_KONTROL') {
+      if (finalNotes !== undefined) updateData.finalNotes = finalNotes;
+      if (recommendationDMM !== undefined) updateData.recommendationDMM = recommendationDMM;
+      if (recommendationDMK !== undefined) updateData.recommendationDMK = recommendationDMK;
+    }
+    
+    // ADMIN her zaman tüm alanları düzenleyebilir
+    if (currentUser.role === 'ADMIN') {
       if (expertEvaluation !== undefined) updateData.expertEvaluation = expertEvaluation;
       if (legalEvaluation !== undefined) updateData.legalEvaluation = legalEvaluation;
       if (recommendationDMM !== undefined) updateData.recommendationDMM = recommendationDMM;
@@ -516,22 +540,36 @@ export async function PUT(
       }
     }
 
-    // IDP_PERSONNEL rapor oluşturma sırasında targetInstitutionId güncelleyebilir
-    if (currentUser.role === 'IDP_PERSONNEL' || currentUser.role === 'ADMIN') {
+    // ADMIN rapor oluşturma sırasında targetInstitutionId güncelleyebilir
+    if (currentUser.role === 'ADMIN') {
       if (targetInstitutionId !== undefined) updateData.targetInstitutionId = targetInstitutionId;
       if (targetMinistry !== undefined) updateData.targetMinistry = targetMinistry;
       if (internalReport !== undefined) updateData.internalReport = internalReport;
       if (externalReport !== undefined) updateData.externalReport = externalReport;
+      if (updateData.externalReport || updateData.internalReport) {
+        updateData.reportGeneratedDate = new Date();
+      }
     }
 
     // Kurum kullanıcısı alanları (sadece kendi kurumuna gönderilen vakalar için)
-    if (isInstitutionUserCase || currentUser.role === 'ADMIN') {
+    // Kurum cevabı verince status IDP_UZMAN_GORUSU'na geçer
+    if (isInstitutionUserCase) {
       if (institutionResponse !== undefined) updateData.institutionResponse = institutionResponse;
       if (correctiveInfo !== undefined) updateData.correctiveInfo = correctiveInfo;
       if (institutionResponse !== undefined) {
         updateData.institutionResponderId = currentUser.id;
         updateData.institutionResponseDate = new Date();
+        // Kurum cevabı verince IDP_UZMAN_GORUSU durumuna geç
+        if (!updateData.status) {
+          updateData.status = 'IDP_UZMAN_GORUSU';
+        }
       }
+    }
+    
+    // ADMIN kurum cevabını görebilir ve düzenleyebilir
+    if (currentUser.role === 'ADMIN') {
+      if (institutionResponse !== undefined) updateData.institutionResponse = institutionResponse;
+      if (correctiveInfo !== undefined) updateData.correctiveInfo = correctiveInfo;
     }
 
     // Vakayı güncelle

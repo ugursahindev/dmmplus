@@ -64,6 +64,7 @@ interface CaseDetail {
   
   idpAssessment?: string;
   idpNotes?: string;
+  expertEvaluation?: string;
   legalAssessment?: string;
   legalNotes?: string;
   legalApproved?: boolean;
@@ -71,6 +72,7 @@ interface CaseDetail {
   finalApproval?: boolean;
   internalReport?: string;
   externalReport?: string;
+  reportGeneratedDate?: string;
   targetMinistry?: string;
   targetInstitutionId?: number;
   targetInstitution?: {
@@ -80,6 +82,20 @@ interface CaseDetail {
   institutionResponse?: string;
   correctiveInfo?: string;
   
+  // Yeni vaka formu alanları
+  newsHeadline?: string;
+  newspaperAuthor?: string;
+  newsSummary?: string;
+  ministryInfo?: string;
+  relatedMinistry?: string;
+  submittedTo?: string;
+  submittingUnit?: string;
+  preparedBy?: string;
+  disinformationType?: string;
+  recommendationDMM?: string;
+  recommendationDMK?: string;
+  
+  createdById: number;
   createdAt: string;
   updatedAt: string;
   
@@ -94,19 +110,21 @@ interface CaseDetail {
 
 const statusLabels: Record<string, string> = {
   IDP_FORM: 'IDP Formu',
-  HUKUK_INCELEMESI: 'Hukuk İncelemesi',
-  SON_KONTROL: 'Son Kontrol',
-  RAPOR_URETIMI: 'Rapor Üretimi',
+  ADMIN_ONAYI_BEKLENIYOR: 'Admin Onayı Bekleniyor',
   KURUM_BEKLENIYOR: 'Kurum Bekleniyor',
+  IDP_UZMAN_GORUSU: 'IDP Uzman Görüşü',
+  HUKUK_INCELEMESI: 'Hukuk İncelemesi',
+  IDP_SON_KONTROL: 'IDP Son Kontrol',
   TAMAMLANDI: 'Tamamlandı',
 };
 
 const statusIcons: Record<string, any> = {
   IDP_FORM: FileText,
-  HUKUK_INCELEMESI: Gavel,
-  SON_KONTROL: CheckCircle,
-  RAPOR_URETIMI: FileText,
+  ADMIN_ONAYI_BEKLENIYOR: Clock,
   KURUM_BEKLENIYOR: Building2,
+  IDP_UZMAN_GORUSU: FileText,
+  HUKUK_INCELEMESI: Gavel,
+  IDP_SON_KONTROL: CheckCircle,
   TAMAMLANDI: CheckCircle,
 };
 
@@ -122,6 +140,16 @@ const priorityLabels: Record<string, string> = {
   MEDIUM: 'Orta',
   HIGH: 'Yüksek',
   CRITICAL: 'Kritik',
+};
+
+const disinformationTypeLabels: Record<string, string> = {
+  YALAN_HABER: 'Yalan Haber',
+  MANIPULASYON: 'Manipülasyon',
+  YANILTICI_ICERIK: 'Yanıltıcı İçerik',
+  SAHTE_BELGE: 'Sahte Belge',
+  PROPAGANDA: 'Propaganda',
+  ALGI_OPERASYONU: 'Algı Operasyonu',
+  DIGER: 'Diğer',
 };
 
 export default function CaseDetailPage() {
@@ -165,8 +193,8 @@ export default function CaseDetailPage() {
     setActionType(type);
     setActionData({});
     
-    // Eğer rapor oluşturma işlemiyse, kurumları yükle
-    if (type === 'generate_report') {
+    // Eğer kurum seçimi gerekiyorsa, kurumları yükle
+    if (type === 'send_to_institution' || type === 'generate_report') {
       await fetchInstitutions();
     }
     
@@ -213,8 +241,40 @@ export default function CaseDetailPage() {
       let updates: any = { ...actionData };
 
       switch (actionType) {
+        case 'send_to_institution':
+          if (!actionData.targetInstitutionId) {
+            toast.error('Lütfen hedef kurumu seçin');
+            setIsSubmitting(false);
+            return;
+          }
+          updates.status = 'KURUM_BEKLENIYOR';
+          updates.targetInstitutionId = actionData.targetInstitutionId;
+          updates.targetMinistry = actionData.targetMinistry;
+          break;
         case 'send_to_legal':
           updates.status = 'HUKUK_INCELEMESI';
+          break;
+        case 'add_expert_evaluation':
+          if (!actionData.expertEvaluation || !actionData.expertEvaluation.trim()) {
+            toast.error('Lütfen uzman görüşü yazın');
+            setIsSubmitting(false);
+            return;
+          }
+          updates.expertEvaluation = actionData.expertEvaluation;
+          updates.status = 'ADMIN_ONAYI_BEKLENIYOR';
+          break;
+        case 'add_final_control':
+          if (!actionData.finalNotes || !actionData.finalNotes.trim()) {
+            toast.error('Lütfen son kontrol notu yazın');
+            setIsSubmitting(false);
+            return;
+          }
+          updates.finalNotes = actionData.finalNotes;
+          // Öneri ve teklifler tek alanda, hem DMM hem DMK'ya aynı değeri yazıyoruz
+          const recommendations = actionData.recommendations || '';
+          updates.recommendationDMM = recommendations;
+          updates.recommendationDMK = recommendations;
+          updates.status = 'ADMIN_ONAYI_BEKLENIYOR';
           break;
         case 'legal_review':
           // Validate legal review fields
@@ -228,28 +288,24 @@ export default function CaseDetailPage() {
             setIsSubmitting(false);
             return;
           }
-          updates.status = 'SON_KONTROL';
+          updates.status = 'IDP_SON_KONTROL';
           updates.legalAssessment = actionData.assessment;
           updates.legalNotes = actionData.notes;
           updates.legalApproved = actionData.approved;
           break;
-        case 'final_control':
-          updates.status = 'RAPOR_URETIMI';
-          updates.finalNotes = actionData.notes;
-          updates.finalApproval = true;
-          break;
-        case 'generate_report':
-          updates.status = 'KURUM_BEKLENIYOR';
-          updates.internalReport = actionData.internalReport;
-          updates.externalReport = actionData.externalReport;
-          updates.targetMinistry = actionData.targetMinistry; // Backward compatibility
-          updates.targetInstitutionId = actionData.targetInstitutionId;
+        case 'complete_and_report':
+          updates.status = 'TAMAMLANDI';
           updates.reportGeneratedDate = new Date().toISOString();
           break;
         case 'institution_response':
-          updates.status = 'TAMAMLANDI';
+          if (!actionData.response || !actionData.response.trim()) {
+            toast.error('Lütfen kurum yanıtı yazın');
+            setIsSubmitting(false);
+            return;
+          }
           updates.institutionResponse = actionData.response;
           updates.correctiveInfo = actionData.correctiveInfo;
+          // Status IDP_UZMAN_GORUSU'na geçecek (API'de otomatik)
           break;
       }
 
@@ -265,14 +321,8 @@ export default function CaseDetailPage() {
       await api.updateCase(token!, Number(params.id), updatePayload);
       toast.success('İşlem başarıyla tamamlandı');
       
-      // Hukuki değerlendirme tamamlandıktan sonra /legal sayfasına yönlendir
-      if (actionType === 'legal_review') {
-        onClose();
-        router.push('/legal');
-      } else {
         fetchCase();
-        onClose();
-      }
+      onClose();
     } catch (error: any) {
       console.error('Update error:', error);
       toast.error(error.message || 'İşlem sırasında hata oluştu');
@@ -295,7 +345,10 @@ export default function CaseDetailPage() {
     return null;
   }
 
-  const canEdit = user.role === 'ADMIN' || user.role === 'IDP_PERSONNEL';
+  // Düzenleme yetkisi: IDP_PERSONNEL sadece IDP_FORM durumunda kendi vakasını düzenleyebilir
+  const canEdit = user.role === 'ADMIN' || 
+    (user.role === 'IDP_PERSONNEL' && caseData.status === 'IDP_FORM' && caseData.createdById === user.id);
+  
   // İşlemler sekmesi için erişim kontrolü - her rol kendi işlemlerini yapabilir
   // INSTITUTION_USER sadece kendi kurumuna gönderilen vakalar için erişebilir
   const isInstitutionUserCase = user.role === 'INSTITUTION_USER' && 
@@ -304,10 +357,10 @@ export default function CaseDetailPage() {
      caseData.targetMinistry === user.institution);
   
   const canAccessActions = 
-    (user.role === 'IDP_PERSONNEL' && ['IDP_FORM', 'SON_KONTROL', 'RAPOR_URETIMI'].includes(caseData.status)) ||
+    (user.role === 'ADMIN' && (['IDP_FORM', 'ADMIN_ONAYI_BEKLENIYOR'].includes(caseData.status) || caseData.status === 'TAMAMLANDI')) ||
+    (user.role === 'IDP_PERSONNEL' && ['IDP_UZMAN_GORUSU', 'IDP_SON_KONTROL'].includes(caseData.status)) ||
     (user.role === 'LEGAL_PERSONNEL' && caseData.status === 'HUKUK_INCELEMESI') ||
-    isInstitutionUserCase ||
-    user.role === 'ADMIN';
+    isInstitutionUserCase;
   const StatusIcon = statusIcons[caseData.status] || FileText;
 
   return (
@@ -329,13 +382,6 @@ export default function CaseDetailPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button
-              color="secondary"
-              startContent={<Download className="w-4 h-4" />}
-              onClick={handleDownloadReport}
-            >
-              Arz Notu İndir
-            </Button>
             {canEdit && (
               <Button
                 color="primary"
@@ -370,11 +416,84 @@ export default function CaseDetailPage() {
         {/* Tabs */}
         <Tabs 
           selectedKey={activeTab} 
-          onSelectionChange={(key) => setActiveTab(key as string)}
+          onSelectionChange={(key: any) => setActiveTab(key as string)}
         >
           <Tab key="details" title="Detaylar">
             <Card className="mt-4">
               <CardBody className="space-y-6">
+                {/* Rapor Başlığı */}
+                {(caseData.relatedMinistry || caseData.submittedTo || caseData.submittingUnit || caseData.preparedBy) && (
+                  <div className="bg-default-50 p-4 rounded-lg">
+                    <h3 className="text-md font-semibold mb-4">Rapor Başlığı</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {caseData.relatedMinistry && (
+                        <div>
+                          <p className="text-sm text-default-500">Konu</p>
+                          <p className="mt-1 text-sm">{caseData.relatedMinistry}</p>
+                        </div>
+                      )}
+                      {caseData.submittedTo && (
+                        <div>
+                          <p className="text-sm text-default-500">Sunulan Makam</p>
+                          <p className="mt-1 text-sm">{caseData.submittedTo}</p>
+                        </div>
+                      )}
+                      {caseData.submittingUnit && (
+                        <div>
+                          <p className="text-sm text-default-500">Sunan Birim</p>
+                          <p className="mt-1 text-sm">{caseData.submittingUnit}</p>
+                        </div>
+                      )}
+                      {caseData.preparedBy && (
+                        <div>
+                          <p className="text-sm text-default-500">Hazırlayan</p>
+                          <p className="mt-1 text-sm">{caseData.preparedBy}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Haber Bilgileri */}
+                {(caseData.newsHeadline || caseData.newspaperAuthor || caseData.newsSummary || caseData.sourceUrl) && (
+                  <div className="bg-default-50 p-4 rounded-lg">
+                    <h3 className="text-md font-semibold mb-4">Haber Bilgileri</h3>
+                    <div className="space-y-4">
+                      {caseData.newsHeadline && (
+                        <div>
+                          <p className="text-sm text-default-500">Haber Başlığı</p>
+                          <p className="mt-1 text-sm">{caseData.newsHeadline}</p>
+                        </div>
+                      )}
+                      {caseData.newspaperAuthor && (
+                        <div>
+                          <p className="text-sm text-default-500">Gazete, Yazar/Muhabir</p>
+                          <p className="mt-1 text-sm">{caseData.newspaperAuthor}</p>
+                        </div>
+                      )}
+                      {caseData.newsSummary && (
+                        <div>
+                          <p className="text-sm text-default-500">Haber Özeti</p>
+                          <p className="mt-1 text-sm whitespace-pre-wrap">{caseData.newsSummary}</p>
+                        </div>
+                      )}
+                      {caseData.sourceUrl && (
+                        <div>
+                          <p className="text-sm text-default-500">Haber Linki</p>
+                          <a 
+                            href={caseData.sourceUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline"
+                          >
+                            {caseData.sourceUrl}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Genel Bilgiler */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Genel Bilgiler</h3>
@@ -392,19 +511,48 @@ export default function CaseDetailPage() {
                         <LinkIcon className="w-4 h-4 text-default-400" />
                         <span className="text-sm">Kaynak: {caseData.sourceType}</span>
                       </div>
-                      {caseData.sourceUrl && (
-                        <a 
-                          href={caseData.sourceUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline"
-                        >
-                          Kaynak URL'yi Görüntüle
-                        </a>
-                      )}
                     </div>
                   </div>
                 </div>
+
+                {/* Bakanlık Bilgilendirme */}
+                {caseData.ministryInfo && (
+                  <div className="bg-default-50 p-4 rounded-lg">
+                    <h3 className="text-md font-semibold mb-4">Bakanlık Bilgilendirme</h3>
+                    <p className="text-sm whitespace-pre-wrap">{caseData.ministryInfo}</p>
+                  </div>
+                )}
+
+                {/* Dezenformasyon Türü */}
+                {caseData.disinformationType && (
+                  <div>
+                    <p className="text-sm text-default-500 mb-2">Tespit Edilen Dezenformasyon Türü</p>
+                    <Chip variant="flat" color="warning">
+                      {disinformationTypeLabels[caseData.disinformationType] || caseData.disinformationType}
+                    </Chip>
+                  </div>
+                )}
+
+                {/* Öneri ve Teklifler */}
+                {(caseData.recommendationDMM || caseData.recommendationDMK) && (
+                  <div className="bg-default-50 p-4 rounded-lg">
+                    <h3 className="text-md font-semibold mb-4">Öneri ve Teklifler</h3>
+                    <div className="space-y-4">
+                      {caseData.recommendationDMM && (
+                        <div>
+                          <p className="text-sm text-default-500 mb-2">DMM için Gereği</p>
+                          <p className="text-sm whitespace-pre-wrap">{caseData.recommendationDMM}</p>
+                        </div>
+                      )}
+                      {caseData.recommendationDMK && (
+                        <div>
+                          <p className="text-sm text-default-500 mb-2">DMK için Gereği</p>
+                          <p className="text-sm whitespace-pre-wrap">{caseData.recommendationDMK}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Etiketler */}
                 {(() => {
@@ -433,6 +581,13 @@ export default function CaseDetailPage() {
                     {caseData.idpNotes && (
                       <p className="text-sm text-default-500 mt-2">Not: {caseData.idpNotes}</p>
                     )}
+                  </div>
+                )}
+
+                {caseData.expertEvaluation && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Uzman Görüşü</h4>
+                    <p className="text-sm whitespace-pre-wrap">{caseData.expertEvaluation}</p>
                   </div>
                 )}
 
@@ -465,6 +620,71 @@ export default function CaseDetailPage() {
                         <p className="text-sm mt-1">{caseData.correctiveInfo}</p>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Son Kontrol */}
+                {caseData.finalNotes && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Son Kontrol Notları</h4>
+                    <p className="text-sm whitespace-pre-wrap">{caseData.finalNotes}</p>
+                    {caseData.finalApproval && (
+                      <Chip size="sm" color="success" className="mt-2">
+                        Onaylandı
+                      </Chip>
+                    )}
+                  </div>
+                )}
+
+                {/* Öneriler */}
+                {(caseData.recommendationDMM || caseData.recommendationDMK) && (
+                  <div className="bg-default-50 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-2">Öneriler</h4>
+                    {caseData.recommendationDMM && (
+                      <div className="mb-3">
+                        <p className="text-sm text-default-500 mb-1">DMM için Öneri:</p>
+                        <p className="text-sm whitespace-pre-wrap">{caseData.recommendationDMM}</p>
+                      </div>
+                    )}
+                    {caseData.recommendationDMK && (
+                      <div>
+                        <p className="text-sm text-default-500 mb-1">DMK için Öneri:</p>
+                        <p className="text-sm whitespace-pre-wrap">{caseData.recommendationDMK}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Rapor Bilgileri */}
+                {(caseData.internalReport || caseData.externalReport || caseData.targetMinistry || caseData.targetInstitution) && (
+                  <div className="bg-default-50 p-4 rounded-lg">
+                    <h3 className="text-md font-semibold mb-4">Rapor Bilgileri</h3>
+                    <div className="space-y-4">
+                      {caseData.targetMinistry && (
+                        <div>
+                          <p className="text-sm text-default-500 mb-2">Hedef Bakanlık/Kurum</p>
+                          <p className="text-sm">{caseData.targetMinistry}</p>
+                        </div>
+                      )}
+                      {caseData.targetInstitution && (
+                        <div>
+                          <p className="text-sm text-default-500 mb-2">Hedef Kurum</p>
+                          <p className="text-sm">{caseData.targetInstitution.name}</p>
+                        </div>
+                      )}
+                      {caseData.internalReport && (
+                        <div>
+                          <p className="text-sm text-default-500 mb-2">İç Rapor (Makam Notu)</p>
+                          <p className="text-sm whitespace-pre-wrap">{caseData.internalReport}</p>
+                        </div>
+                      )}
+                      {caseData.externalReport && (
+                        <div>
+                          <p className="text-sm text-default-500 mb-2">Dış Rapor (Harici Not)</p>
+                          <p className="text-sm whitespace-pre-wrap">{caseData.externalReport}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -581,16 +801,67 @@ export default function CaseDetailPage() {
           <Tab key="actions" title="İşlemler" isDisabled={!canAccessActions}>
             <Card className="mt-4">
               <CardBody className="space-y-4">
-                {user.role === 'IDP_PERSONNEL' && caseData.status === 'IDP_FORM' && (
+                {/* Admin: IDP_FORM -> KURUM_BEKLENIYOR */}
+                {user.role === 'ADMIN' && caseData.status === 'IDP_FORM' && (
                   <Button
                     color="primary"
                     startContent={<Send className="w-4 h-4" />}
-                    onClick={() => handleAction('send_to_legal')}
+                    onClick={() => handleAction('send_to_institution')}
                   >
-                    Hukuki İncelemeye Gönder
+                    Kurum İncelemesi İçin Gönder
                   </Button>
                 )}
 
+                {/* Admin: ADMIN_ONAYI_BEKLENIYOR -> HUKUK_INCELEMESI (Sadece IDP_UZMAN_GORUSU sonrası, yani expertEvaluation varsa ama finalNotes yoksa) */}
+                {user.role === 'ADMIN' && 
+                 caseData.status === 'ADMIN_ONAYI_BEKLENIYOR' && 
+                 caseData.expertEvaluation && 
+                 !caseData.finalNotes && (
+                  <Button
+                    color="primary"
+                    startContent={<Gavel className="w-4 h-4" />}
+                    onClick={() => handleAction('send_to_legal')}
+                  >
+                    Hukuk İncelemesi İçin Gönder
+                  </Button>
+                )}
+
+                {/* Admin: ADMIN_ONAYI_BEKLENIYOR -> TAMAMLANDI (Rapor oluştur ve sonlandır) - Sadece IDP_SON_KONTROL sonrası, yani finalNotes varsa */}
+                {user.role === 'ADMIN' && 
+                 caseData.status === 'ADMIN_ONAYI_BEKLENIYOR' && 
+                 caseData.finalNotes && (
+                  <Button
+                    color="success"
+                    startContent={<FileText className="w-4 h-4" />}
+                    onClick={() => handleAction('complete_and_report')}
+                  >
+                    Sonlandır ve Rapor Oluştur
+                  </Button>
+                )}
+
+                {/* IDP_PERSONNEL: KURUM_BEKLENIYOR -> IDP_UZMAN_GORUSU (Uzman görüşü ekle) */}
+                {user.role === 'IDP_PERSONNEL' && caseData.status === 'IDP_UZMAN_GORUSU' && (
+                  <Button
+                    color="primary"
+                    startContent={<FileText className="w-4 h-4" />}
+                    onClick={() => handleAction('add_expert_evaluation')}
+                  >
+                    Uzman Görüşü Ekle
+                  </Button>
+                )}
+
+                {/* IDP_PERSONNEL: IDP_SON_KONTROL (Son kontrol notu ve öneri ekle) */}
+                {user.role === 'IDP_PERSONNEL' && caseData.status === 'IDP_SON_KONTROL' && (
+                  <Button
+                    color="primary"
+                    startContent={<CheckCircle className="w-4 h-4" />}
+                    onClick={() => handleAction('add_final_control')}
+                  >
+                    Son Kontrol Notu ve Öneri Ekle
+                  </Button>
+                )}
+
+                {/* LEGAL_PERSONNEL: HUKUK_INCELEMESI */}
                 {user.role === 'LEGAL_PERSONNEL' && caseData.status === 'HUKUK_INCELEMESI' && (
                   <Button
                     color="primary"
@@ -601,26 +872,7 @@ export default function CaseDetailPage() {
                   </Button>
                 )}
 
-                {user.role === 'IDP_PERSONNEL' && caseData.status === 'SON_KONTROL' && (
-                  <Button
-                    color="primary"
-                    startContent={<CheckCircle className="w-4 h-4" />}
-                    onClick={() => handleAction('final_control')}
-                  >
-                    Son Kontrolü Tamamla
-                  </Button>
-                )}
-
-                {user.role === 'IDP_PERSONNEL' && caseData.status === 'RAPOR_URETIMI' && (
-                  <Button
-                    color="primary"
-                    startContent={<FileText className="w-4 h-4" />}
-                    onClick={() => handleAction('generate_report')}
-                  >
-                    Rapor Oluştur ve İlgili Kuruma Gönder
-                  </Button>
-                )}
-
+                {/* INSTITUTION_USER: KURUM_BEKLENIYOR -> IDP_UZMAN_GORUSU */}
                 {isInstitutionUserCase && (
                   <Button
                     color="primary"
@@ -628,6 +880,17 @@ export default function CaseDetailPage() {
                     onClick={() => handleAction('institution_response')}
                   >
                     Kurum Yanıtı Ver
+                  </Button>
+                )}
+
+                {/* Admin: TAMAMLANDI durumunda rapor indir */}
+                {user.role === 'ADMIN' && caseData.status === 'TAMAMLANDI' && (
+                  <Button
+                    color="secondary"
+                    startContent={<Download className="w-4 h-4" />}
+                    onClick={handleDownloadReport}
+                  >
+                    Raporu İndir
                   </Button>
                 )}
               </CardBody>
@@ -639,83 +902,23 @@ export default function CaseDetailPage() {
         <Modal isOpen={isOpen} onClose={onClose} size="2xl">
           <ModalContent>
             <ModalHeader>
-              {actionType === 'send_to_legal' && 'Hukuki İncelemeye Gönder'}
+              {actionType === 'send_to_institution' && 'Kurum İncelemesi İçin Gönder'}
+              {actionType === 'send_to_legal' && 'Hukuk İncelemesi İçin Gönder'}
+              {actionType === 'add_expert_evaluation' && 'Uzman Görüşü Ekle'}
+              {actionType === 'add_final_control' && 'Son Kontrol Notu ve Öneri Ekle'}
               {actionType === 'legal_review' && 'Hukuki Değerlendirme'}
-              {actionType === 'final_control' && 'Son Kontrol'}
-              {actionType === 'generate_report' && 'Rapor Oluştur ve İlgili Kuruma Gönder'}
+              {actionType === 'complete_and_report' && 'Sonlandır ve Rapor Oluştur'}
               {actionType === 'institution_response' && 'Kurum Yanıtı'}
             </ModalHeader>
             <ModalBody>
-              {actionType === 'send_to_legal' && (
-                <p>Bu vakayı hukuki incelemeye göndermek istediğinizden emin misiniz?</p>
-              )}
-
-              {actionType === 'legal_review' && (
+              {actionType === 'send_to_institution' && (
                 <div className="space-y-4">
-                  <Textarea
-                    label="Hukuki Değerlendirme"
-                    placeholder="Hukuki değerlendirmenizi yazın"
-                    value={actionData.assessment || ''}
-                    onChange={(e) => setActionData({...actionData, assessment: e.target.value})}
-                    minRows={4}
-                  />
-                  <Textarea
-                    label="Notlar"
-                    placeholder="Ek notlarınız"
-                    value={actionData.notes || ''}
-                    onChange={(e) => setActionData({...actionData, notes: e.target.value})}
-                    minRows={3}
-                  />
-                  <div className="flex gap-4">
-                    <Button
-                      color="success"
-                      onClick={() => setActionData({...actionData, approved: true})}
-                      variant={actionData.approved === true ? 'solid' : 'flat'}
-                    >
-                      Onayla
-                    </Button>
-                    <Button
-                      color="danger"
-                      onClick={() => setActionData({...actionData, approved: false})}
-                      variant={actionData.approved === false ? 'solid' : 'flat'}
-                    >
-                      Reddet
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {actionType === 'final_control' && (
-                <Textarea
-                  label="Son Kontrol Notları"
-                  placeholder="Son kontrol notlarınızı yazın"
-                  value={actionData.notes || ''}
-                  onChange={(e) => setActionData({...actionData, notes: e.target.value})}
-                  minRows={4}
-                />
-              )}
-
-              {actionType === 'generate_report' && (
-                <div className="space-y-4">
-                  <Textarea
-                    label="İç Rapor (Makam Notu)"
-                    placeholder="Kurum içi kullanım için rapor"
-                    value={actionData.internalReport || ''}
-                    onChange={(e) => setActionData({...actionData, internalReport: e.target.value})}
-                    minRows={5}
-                  />
-                  <Textarea
-                    label="Dış Rapor (Harici Not)"
-                    placeholder="Bakanlıklara gönderilecek rapor"
-                    value={actionData.externalReport || ''}
-                    onChange={(e) => setActionData({...actionData, externalReport: e.target.value})}
-                    minRows={5}
-                  />
+                  <p>Bu vakayı kurum incelemesi için göndermek istediğinizden emin misiniz?</p>
                   <Select
-                    label="Hedef Bakanlık / Kurum"
+                    label="Hedef Kurum"
                     placeholder="Kurum seçiniz"
                     selectedKeys={actionData.targetInstitutionId ? [actionData.targetInstitutionId.toString()] : []}
-                    onSelectionChange={(keys) => {
+                    onSelectionChange={(keys: any) => {
                       const selectedId = Array.from(keys)[0];
                       if (selectedId) {
                         const selectedInstitution = institutions.find(inst => inst.id.toString() === selectedId);
@@ -738,20 +941,98 @@ export default function CaseDetailPage() {
                 </div>
               )}
 
+              {actionType === 'send_to_legal' && (
+                <p>Bu vakayı hukuk incelemesi için göndermek istediğinizden emin misiniz?</p>
+              )}
+
+              {actionType === 'add_expert_evaluation' && (
+                <Textarea
+                  label="Uzman Görüşü"
+                  placeholder="Uzman görüşünüzü yazın"
+                  value={actionData.expertEvaluation || ''}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setActionData({...actionData, expertEvaluation: e.target.value})}
+                  minRows={5}
+                  isRequired
+                />
+              )}
+
+              {actionType === 'add_final_control' && (
+                <div className="space-y-4">
+                  <Textarea
+                    label="Son Kontrol Notu"
+                    placeholder="Son kontrol notlarınızı yazın"
+                  value={actionData.finalNotes || ''}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setActionData({...actionData, finalNotes: e.target.value})}
+                    minRows={4}
+                    isRequired
+                  />
+                  <Textarea
+                    label="Öneri ve Teklifler"
+                    placeholder="Öneri ve tekliflerinizi yazın"
+                  value={actionData.recommendations || ''}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setActionData({...actionData, recommendations: e.target.value})}
+                    minRows={4}
+                  />
+                </div>
+              )}
+
+              {actionType === 'legal_review' && (
+                <div className="space-y-4">
+                  <Textarea
+                    label="Hukuki Değerlendirme"
+                    placeholder="Hukuki değerlendirmenizi yazın"
+                    value={actionData.assessment || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setActionData({...actionData, assessment: e.target.value})}
+                    minRows={4}
+                  />
+                  <Textarea
+                    label="Notlar"
+                    placeholder="Ek notlarınız"
+                    value={actionData.notes || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setActionData({...actionData, notes: e.target.value})}
+                    minRows={3}
+                  />
+                  <div className="flex gap-4">
+                    <Button
+                      color="success"
+                      onClick={() => setActionData({...actionData, approved: true})}
+                      variant={actionData.approved === true ? 'solid' : 'flat'}
+                    >
+                      Onayla
+                    </Button>
+                    <Button
+                      color="danger"
+                      onClick={() => setActionData({...actionData, approved: false})}
+                      variant={actionData.approved === false ? 'solid' : 'flat'}
+                    >
+                      Reddet
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {actionType === 'complete_and_report' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-default-500">
+                    Vaka tamamlanacak ve rapor indirilebilir olacaktır. Onaylıyor musunuz?
+                  </p>
+                </div>
+              )}
+
               {actionType === 'institution_response' && (
                 <div className="space-y-4">
                   <Textarea
                     label="Kurum Yanıtı"
                     placeholder="Kurumunuzun resmi yanıtını yazın"
                     value={actionData.response || ''}
-                    onChange={(e) => setActionData({...actionData, response: e.target.value})}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setActionData({...actionData, response: e.target.value})}
                     minRows={4}
                   />
                   <Textarea
                     label="Düzeltici Bilgi"
                     placeholder="Doğru bilgileri ve kaynakları belirtin"
                     value={actionData.correctiveInfo || ''}
-                    onChange={(e) => setActionData({...actionData, correctiveInfo: e.target.value})}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setActionData({...actionData, correctiveInfo: e.target.value})}
                     minRows={4}
                   />
                 </div>
@@ -766,7 +1047,7 @@ export default function CaseDetailPage() {
                 onClick={submitAction}
                 isLoading={isSubmitting}
               >
-                Gönder
+                {actionType === 'complete_and_report' ? 'Onayla' : 'Gönder'}
               </Button>
             </ModalFooter>
           </ModalContent>

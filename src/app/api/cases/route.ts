@@ -99,6 +99,24 @@ export async function GET(request: NextRequest) {
         },
       });
     }
+    
+    // IDP_PERSONNEL için sadece ilgili durumları göster
+    if (currentUser.role === 'IDP_PERSONNEL') {
+      whereConditions.push({
+        status: {
+          in: ['IDP_FORM', 'IDP_UZMAN_GORUSU', 'IDP_SON_KONTROL', 'TAMAMLANDI'],
+        },
+      });
+    }
+    
+    // LEGAL_PERSONNEL için sadece hukuk incelemesi durumunu göster
+    if (currentUser.role === 'LEGAL_PERSONNEL') {
+      whereConditions.push({
+        status: {
+          in: ['HUKUK_INCELEMESI', 'TAMAMLANDI'],
+        },
+      });
+    }
 
     // Build final where clause
     const where = whereConditions.length > 0 
