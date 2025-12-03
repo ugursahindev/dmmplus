@@ -21,6 +21,8 @@ import {
   useDisclosure,
   Spinner,
   Input,
+  Select,
+  SelectItem,
 } from '@nextui-org/react';
 import { 
   ArrowLeft, 
@@ -129,6 +131,8 @@ export default function CaseDetailPage() {
   const [actionType, setActionType] = useState('');
   const [actionData, setActionData] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [institutions, setInstitutions] = useState<any[]>([]);
+  const [isLoadingInstitutions, setIsLoadingInstitutions] = useState(false);
 
   useEffect(() => {
     fetchCase();
@@ -152,10 +156,31 @@ export default function CaseDetailPage() {
     }
   };
 
-  const handleAction = (type: string) => {
+  const handleAction = async (type: string) => {
     setActionType(type);
     setActionData({});
+    
+    // Eğer rapor oluşturma işlemiyse, kurumları yükle
+    if (type === 'generate_report') {
+      await fetchInstitutions();
+    }
+    
     onOpen();
+  };
+
+  const fetchInstitutions = async () => {
+    if (!token) return;
+    
+    try {
+      setIsLoadingInstitutions(true);
+      const response = await api.getInstitutions(token, { active: true });
+      setInstitutions(response.institutions || []);
+    } catch (error: any) {
+      console.error('Failed to fetch institutions:', error);
+      toast.error('Kurumlar yüklenirken hata oluştu');
+    } finally {
+      setIsLoadingInstitutions(false);
+    }
   };
 
   const handleDownloadReport = async () => {
@@ -212,7 +237,8 @@ export default function CaseDetailPage() {
           updates.status = 'KURUM_BEKLENIYOR';
           updates.internalReport = actionData.internalReport;
           updates.externalReport = actionData.externalReport;
-          updates.targetMinistry = actionData.targetMinistry;
+          updates.targetMinistry = actionData.targetMinistry; // Backward compatibility
+          updates.targetInstitutionId = actionData.targetInstitutionId;
           updates.reportGeneratedDate = new Date().toISOString();
           break;
         case 'institution_response':
@@ -580,7 +606,7 @@ export default function CaseDetailPage() {
                     startContent={<FileText className="w-4 h-4" />}
                     onClick={() => handleAction('generate_report')}
                   >
-                    Rapor Oluştur
+                    Rapor Oluştur ve İlgili Kuruma Gönder
                   </Button>
                 )}
 
@@ -605,7 +631,7 @@ export default function CaseDetailPage() {
               {actionType === 'send_to_legal' && 'Hukuki İncelemeye Gönder'}
               {actionType === 'legal_review' && 'Hukuki Değerlendirme'}
               {actionType === 'final_control' && 'Son Kontrol'}
-              {actionType === 'generate_report' && 'Rapor Oluştur'}
+              {actionType === 'generate_report' && 'Rapor Oluştur ve İlgili Kuruma Gönder'}
               {actionType === 'institution_response' && 'Kurum Yanıtı'}
             </ModalHeader>
             <ModalBody>
@@ -674,12 +700,30 @@ export default function CaseDetailPage() {
                     onChange={(e) => setActionData({...actionData, externalReport: e.target.value})}
                     minRows={5}
                   />
-                  <Input
-                    label="Hedef Bakanlık"
-                    placeholder="Örn: Milli Eğitim Bakanlığı"
-                    value={actionData.targetMinistry || ''}
-                    onChange={(e) => setActionData({...actionData, targetMinistry: e.target.value})}
-                  />
+                  <Select
+                    label="Hedef Bakanlık / Kurum"
+                    placeholder="Kurum seçiniz"
+                    selectedKeys={actionData.targetInstitutionId ? [actionData.targetInstitutionId.toString()] : []}
+                    onSelectionChange={(keys) => {
+                      const selectedId = Array.from(keys)[0];
+                      if (selectedId) {
+                        const selectedInstitution = institutions.find(inst => inst.id.toString() === selectedId);
+                        setActionData({
+                          ...actionData,
+                          targetInstitutionId: parseInt(selectedId as string),
+                          targetMinistry: selectedInstitution?.name || '',
+                        });
+                      }
+                    }}
+                    isLoading={isLoadingInstitutions}
+                    isRequired
+                  >
+                    {institutions.map((institution) => (
+                      <SelectItem key={institution.id} value={institution.id}>
+                        {institution.name}
+                      </SelectItem>
+                    ))}
+                  </Select>
                 </div>
               )}
 

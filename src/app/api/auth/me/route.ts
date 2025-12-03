@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
         fullName: true,
         role: true,
         institution: true,
+        institutionId: true,
         active: true,
         createdAt: true,
         updatedAt: true,

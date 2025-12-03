@@ -42,6 +42,7 @@ export interface User {
   fullName: string;
   role: UserRole;
   institution?: string;
+  institutionId?: number;
   active?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -81,6 +82,11 @@ export interface Case {
   internalReport?: string;
   externalReport?: string;
   targetMinistry?: string;
+  targetInstitutionId?: number;
+  targetInstitution?: {
+    id: number;
+    name: string;
+  };
   reportGeneratedDate?: Date;
   
   // Institution Response fields

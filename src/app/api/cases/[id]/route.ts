@@ -391,6 +391,7 @@ export async function PUT(
       internalReport,
       externalReport,
       targetMinistry,
+      targetInstitutionId,
       // Institution Response fields
       institutionResponse,
       correctiveInfo,
@@ -493,9 +494,18 @@ export async function PUT(
       if (internalReport !== undefined) updateData.internalReport = internalReport;
       if (externalReport !== undefined) updateData.externalReport = externalReport;
       if (targetMinistry !== undefined) updateData.targetMinistry = targetMinistry;
+      if (targetInstitutionId !== undefined) updateData.targetInstitutionId = targetInstitutionId;
       if (updateData.externalReport) {
         updateData.reportGeneratedDate = new Date();
       }
+    }
+
+    // IDP_PERSONNEL rapor oluşturma sırasında targetInstitutionId güncelleyebilir
+    if (currentUser.role === 'IDP_PERSONNEL' || currentUser.role === 'ADMIN') {
+      if (targetInstitutionId !== undefined) updateData.targetInstitutionId = targetInstitutionId;
+      if (targetMinistry !== undefined) updateData.targetMinistry = targetMinistry;
+      if (internalReport !== undefined) updateData.internalReport = internalReport;
+      if (externalReport !== undefined) updateData.externalReport = externalReport;
     }
 
     // Kurum kullanıcısı alanları

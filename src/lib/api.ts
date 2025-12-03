@@ -67,6 +67,24 @@ export interface ApiError {
   error: string;
 }
 
+export interface Institution {
+  id: number;
+  name: string;
+  type?: string;
+  description?: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    users: number;
+    cases: number;
+  };
+}
+
+export interface InstitutionsResponse {
+  institutions: Institution[];
+}
+
 export interface CasesResponse {
   cases: Case[];
   totalPages: number;
@@ -752,6 +770,30 @@ export const api = {
 
     if (!response.ok) {
       throw new Error(data.error || 'Ayarlar güncellenemedi');
+    }
+
+    return data;
+  },
+
+  // Get institutions
+  getInstitutions: async (token: string, params?: { search?: string; type?: string; active?: boolean }): Promise<InstitutionsResponse> => {
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.type) queryParams.append('type', params.type);
+    if (params?.active !== undefined) queryParams.append('active', params.active.toString());
+
+    const url = `${API_BASE_URL}/api/institutions${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    
+    const response = await apiRequest(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Kurumlar yüklenemedi');
     }
 
     return data;

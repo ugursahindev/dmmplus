@@ -6,6 +6,192 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database...');
 
+  // Create institutions first - based on existing usernames
+  const institutions = await Promise.all([
+    prisma.institution.upsert({
+      where: { name: 'Adalet Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Adalet Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Adalet Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Aile ve Sosyal Hizmetler Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Aile ve Sosyal Hizmetler Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Aile ve Sosyal Hizmetler Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Çalışma ve Sosyal Güvenlik Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Çalışma ve Sosyal Güvenlik Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Çalışma ve Sosyal Güvenlik Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Çevre, Şehircilik ve İklim Değişikliği Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Çevre, Şehircilik ve İklim Değişikliği Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Çevre, Şehircilik ve İklim Değişikliği Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Dışişleri Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Dışişleri Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Dışişleri Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Enerji ve Tabii Kaynaklar Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Enerji ve Tabii Kaynaklar Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Enerji ve Tabii Kaynaklar Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Gençlik ve Spor Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Gençlik ve Spor Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Gençlik ve Spor Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Hazine ve Maliye Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Hazine ve Maliye Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Hazine ve Maliye Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'İçişleri Bakanlığı' },
+      update: {},
+      create: {
+        name: 'İçişleri Bakanlığı',
+        type: 'MINISTRY',
+        description: 'İçişleri Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Kültür ve Turizm Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Kültür ve Turizm Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Kültür ve Turizm Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Milli Eğitim Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Milli Eğitim Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Milli Eğitim Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Milli Savunma Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Milli Savunma Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Milli Savunma Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Sağlık Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Sağlık Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Sağlık Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Sanayi ve Teknoloji Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Sanayi ve Teknoloji Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Sanayi ve Teknoloji Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Tarım ve Orman Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Tarım ve Orman Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Tarım ve Orman Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Ticaret Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Ticaret Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Ticaret Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Ulaştırma ve Altyapı Bakanlığı' },
+      update: {},
+      create: {
+        name: 'Ulaştırma ve Altyapı Bakanlığı',
+        type: 'MINISTRY',
+        description: 'Ulaştırma ve Altyapı Bakanlığı',
+        active: true,
+      },
+    }),
+    prisma.institution.upsert({
+      where: { name: 'Yüksek Seçim Kurulu' },
+      update: {},
+      create: {
+        name: 'Yüksek Seçim Kurulu',
+        type: 'OTHER',
+        description: 'Yüksek Seçim Kurulu',
+        active: true,
+      },
+    }),
+  ]);
+
+  console.log(`✅ Created ${institutions.length} institutions`);
+
   // Create demo users (only if they don't exist)
   const adminUser = await prisma.user.upsert({
     where: { username: 'admin' },
@@ -46,24 +232,75 @@ async function main() {
     },
   });
 
+  // Helper function to find institution by name
+  const findInstitution = (name: string) => institutions.find(inst => inst.name === name);
+
+  // Update existing institution users with their institutions based on username
+  const institutionUserMappings: { username: string; institutionName: string }[] = [
+    { username: 'kurum_user', institutionName: 'Milli Eğitim Bakanlığı' },
+    { username: 'adalet_bakanlik', institutionName: 'Adalet Bakanlığı' },
+    { username: 'aile_sosyal_bakanlik', institutionName: 'Aile ve Sosyal Hizmetler Bakanlığı' },
+    { username: 'calisma_sosyal_bakanlik', institutionName: 'Çalışma ve Sosyal Güvenlik Bakanlığı' },
+    { username: 'cevre_sehir_bakanlik', institutionName: 'Çevre, Şehircilik ve İklim Değişikliği Bakanlığı' },
+    { username: 'disisleri_bakanlik', institutionName: 'Dışişleri Bakanlığı' },
+    { username: 'enerji_tabii_bakanlik', institutionName: 'Enerji ve Tabii Kaynaklar Bakanlığı' },
+    { username: 'genclik_spor_bakanlik', institutionName: 'Gençlik ve Spor Bakanlığı' },
+    { username: 'hazine_maliye_bakanlik', institutionName: 'Hazine ve Maliye Bakanlığı' },
+    { username: 'icisleri_bakanlik', institutionName: 'İçişleri Bakanlığı' },
+    { username: 'kultur_turizm_bakanlik', institutionName: 'Kültür ve Turizm Bakanlığı' },
+    { username: 'milli_egitim_bakanlik', institutionName: 'Milli Eğitim Bakanlığı' },
+    { username: 'milli_savunma_bakanlik', institutionName: 'Milli Savunma Bakanlığı' },
+    { username: 'saglik_bakanlik', institutionName: 'Sağlık Bakanlığı' },
+    { username: 'sanayi_teknoloji_bakanlik', institutionName: 'Sanayi ve Teknoloji Bakanlığı' },
+    { username: 'tarim_orman_bakanlik', institutionName: 'Tarım ve Orman Bakanlığı' },
+    { username: 'ticaret_bakanlik', institutionName: 'Ticaret Bakanlığı' },
+    { username: 'ulastirma_altyapi_bakanlik', institutionName: 'Ulaştırma ve Altyapı Bakanlığı' },
+  ];
+
+  // Update or create institution users
+  for (const mapping of institutionUserMappings) {
+    const institution = findInstitution(mapping.institutionName);
+    if (institution) {
+      await prisma.user.updateMany({
+        where: { username: mapping.username },
+        data: {
+          institutionId: institution.id,
+          institution: mapping.institutionName, // Backward compatibility
+        },
+      });
+    }
+  }
+
+  // Create kurum_user if it doesn't exist
+  const mebInstitution = findInstitution('Milli Eğitim Bakanlığı')!;
   const institutionUser = await prisma.user.upsert({
     where: { username: 'kurum_user' },
-    update: {},
+    update: {
+      institutionId: mebInstitution.id,
+      institution: 'Milli Eğitim Bakanlığı',
+    },
     create: {
       username: 'kurum_user',
       password: await bcryptjs.hash('123456', 12),
       email: 'kurum@meb.gov.tr',
       fullName: 'MEB Temsilcisi',
       role: 'INSTITUTION_USER',
-      institution: 'Milli Eğitim Bakanlığı',
+      institution: 'Milli Eğitim Bakanlığı', // Backward compatibility
+      institutionId: mebInstitution.id,
       active: true,
     },
   });
 
-  console.log('✅ Users created');
+  console.log('✅ Users created and assigned to institutions');
 
-  // Create sample cases
-  const case1 = await prisma.case.create({
+  // Check if cases already exist
+  const existingCasesCount = await prisma.case.count();
+  if (existingCasesCount > 0) {
+    console.log(`⚠️  ${existingCasesCount} cases already exist, skipping case creation`);
+  } else {
+    console.log('📝 Creating sample cases...');
+    // Create sample cases
+    const case1 = await prisma.case.create({
     data: {
       caseNumber: `DMM-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-001`,
       title: 'Sahte Deprem Yardım Kampanyası',
@@ -121,14 +358,15 @@ async function main() {
       finalReviewDate: new Date(),
       internalReport: 'Manipüle edilmiş seçim anketi vakası tespit edilmiştir...',
       externalReport: 'Sayın Yetkili, sosyal medyada dolaşan sahte anket sonuçları hakkında...',
-      targetMinistry: 'Yüksek Seçim Kurulu',
+      targetMinistry: 'Yüksek Seçim Kurulu', // Backward compatibility
+      targetInstitutionId: institutions.find(inst => inst.name === 'Yüksek Seçim Kurulu')?.id,
       reportGeneratedDate: new Date(),
       createdById: idpUser.id,
     },
   });
 
-  // Add case history for case3
-  await prisma.caseHistory.createMany({
+    // Add case history for case3
+    await prisma.caseHistory.createMany({
     data: [
       {
         caseId: case3.id,
@@ -169,8 +407,8 @@ async function main() {
     ],
   });
 
-  // Create more sample cases for different statuses
-  const additionalCases = await prisma.case.createMany({
+    // Create more sample cases for different statuses
+    const additionalCases = await prisma.case.createMany({
     data: [
       {
         caseNumber: `DMM-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-004`,
@@ -196,7 +434,8 @@ async function main() {
         finalReviewDate: new Date(),
         internalReport: 'Eğitim istatistikleri manipülasyonu tespit edilmiştir...',
         externalReport: 'Sayın Yetkili, sosyal medyada MEB verilerinin çarpıtıldığı tespit edilmiştir...',
-        targetMinistry: 'Milli Eğitim Bakanlığı',
+        targetMinistry: 'Milli Eğitim Bakanlığı', // Backward compatibility
+        targetInstitutionId: mebInstitution.id,
         reportGeneratedDate: new Date(),
         createdById: idpUser.id,
       },
@@ -281,7 +520,8 @@ async function main() {
         finalReviewDate: new Date(Date.now() - 172800000),
         internalReport: 'Terör propagandası içeren video tespit edilmiş ve gereği yapılmıştır.',
         externalReport: 'İçişleri Bakanlığına bildirilmiştir.',
-        targetMinistry: 'İçişleri Bakanlığı',
+        targetMinistry: 'İçişleri Bakanlığı', // Backward compatibility
+        targetInstitutionId: institutions.find(inst => inst.name === 'İçişleri Bakanlığı')?.id,
         reportGeneratedDate: new Date(Date.now() - 172800000),
         institutionResponse: 'Video platformdan kaldırılmış, şüpheliler hakkında soruşturma başlatılmıştır.',
         institutionResponderId: institutionUser.id,
@@ -292,13 +532,17 @@ async function main() {
     ],
   });
 
-  console.log(`✅ Created ${additionalCases.count} additional cases`);
-  console.log('✅ Sample cases created');
+    console.log(`✅ Created ${additionalCases.count} additional cases`);
+    console.log('✅ Sample cases created');
+  }
+  
   console.log('\n📝 Demo users:');
   console.log('  - Admin: admin / 123456');
   console.log('  - IDP Personnel: idp_user / 123456');
   console.log('  - Legal Personnel: legal_user / 123456');
   console.log('  - Institution User: kurum_user / 123456');
+  console.log(`\n✅ Total institutions: ${institutions.length}`);
+  console.log(`✅ Institution users assigned to their institutions`);
 }
 
 main()

@@ -83,6 +83,21 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // INSTITUTION_USER için sadece kendi kurumuna gönderilen vakaları göster
+    if (currentUser.role === 'INSTITUTION_USER' && currentUser.institutionId) {
+      whereConditions.push({
+        OR: [
+          { targetInstitutionId: currentUser.institutionId },
+          { targetMinistry: currentUser.institution || '' },
+        ],
+      });
+      whereConditions.push({
+        status: {
+          in: ['KURUM_BEKLENIYOR', 'TAMAMLANDI'],
+        },
+      });
+    }
+
     // Build final where clause
     const where = whereConditions.length > 0 
       ? (whereConditions.length === 1 ? whereConditions[0] : { AND: whereConditions })
@@ -121,6 +136,14 @@ export async function GET(request: NextRequest) {
             id: true,
             fileName: true,
             fileType: true,
+          },
+        },
+        targetMinistry: true,
+        targetInstitutionId: true,
+        targetInstitution: {
+          select: {
+            id: true,
+            name: true,
           },
         },
         _count: {

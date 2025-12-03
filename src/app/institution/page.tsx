@@ -33,6 +33,11 @@ interface InstitutionCase {
   priority: string;
   status: string;
   targetMinistry?: string;
+  targetInstitutionId?: number;
+  targetInstitution?: {
+    id: number;
+    name: string;
+  };
   reportGeneratedDate?: string;
   institutionResponse?: string;
   institutionResponseDate?: string;
@@ -98,10 +103,10 @@ export default function InstitutionPage() {
       const data = await response.json();
       const institutionCases = data.cases || [];
       
-      // For institution users, filter by their ministry and show only relevant statuses
-      const filteredCases = user?.role === 'INSTITUTION_USER' && user?.institution
+      // For institution users, filter by their institution and show only relevant statuses
+      const filteredCases = user?.role === 'INSTITUTION_USER' && user?.institutionId
         ? institutionCases.filter((c: InstitutionCase) => 
-            c.targetMinistry === user.institution && 
+            (c.targetInstitutionId === user.institutionId || c.targetMinistry === user.institution) && 
             ['KURUM_BEKLENIYOR', 'TAMAMLANDI'].includes(c.status)
           )
         : institutionCases.filter((c: InstitutionCase) => 
@@ -164,7 +169,7 @@ export default function InstitutionPage() {
         return (
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-default-400" />
-            <span className="text-sm">{item.targetMinistry || '-'}</span>
+            <span className="text-sm">{item.targetInstitution?.name || item.targetMinistry || '-'}</span>
           </div>
         );
       

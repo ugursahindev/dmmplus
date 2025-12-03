@@ -10,32 +10,52 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+model Institution {
   id          Int      @id @default(autoincrement())
-  username    String   @unique
-  password    String
-  email       String   @unique
-  fullName    String
-  role        String   // ADMIN, IDP_PERSONNEL, LEGAL_PERSONNEL, INSTITUTION_USER
-  institution String?
+  name        String   @unique
+  type        String? // MINISTRY, MUNICIPALITY, OTHER
+  description String?
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  createdCases           Case[]       @relation("CreatedCases")
-  legalReviewedCases     Case[]       @relation("LegalReviewedCases")
-  finalReviewedCases     Case[]       @relation("FinalReviewedCases")
-  institutionResponses   Case[]       @relation("InstitutionResponses")
-  uploadedFiles          CaseFile[]
-  caseActions            CaseHistory[]
-  assignedTasks          Task[]       @relation("AssignedTasks")
-  createdTasks           Task[]       @relation("CreatedTasks")
-  taskComments           TaskComment[]
-  conversations          ConversationParticipant[]
-  sentMessages           Message[]
-  readMessages           MessageRead[]
-  sessions               Session[]
+  users User[]
+  cases Case[]
+
+  @@index([name])
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  username      String   @unique
+  password      String
+  email         String   @unique
+  fullName      String
+  role          String // ADMIN, IDP_PERSONNEL, LEGAL_PERSONNEL, INSTITUTION_USER
+  institution   String? // Backward compatibility - will be deprecated
+  institutionId Int? // Foreign key to Institution
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  institutionRelation  Institution?              @relation(fields: [institutionId], references: [id])
+  createdCases         Case[]                    @relation("CreatedCases")
+  legalReviewedCases   Case[]                    @relation("LegalReviewedCases")
+  finalReviewedCases   Case[]                    @relation("FinalReviewedCases")
+  institutionResponses Case[]                    @relation("InstitutionResponses")
+  uploadedFiles        CaseFile[]
+  caseActions          CaseHistory[]
+  assignedTasks        Task[]                    @relation("AssignedTasks")
+  createdTasks         Task[]                    @relation("CreatedTasks")
+  taskComments         TaskComment[]
+  conversations        ConversationParticipant[]
+  sentMessages         Message[]
+  readMessages         MessageRead[]
+  sessions             Session[]
+
+  @@index([institutionId])
 }
 
 model Session {
@@ -44,134 +64,138 @@ model Session {
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([token])
 }
 
 model Case {
-  id                      Int        @id @default(autoincrement())
-  caseNumber              String     @unique
-  title                   String
-  description             String
-  platform                String     // TWITTER, FACEBOOK, INSTAGRAM, YOUTUBE, WHATSAPP, TELEGRAM, TIKTOK, OTHER
-  priority                String     // LOW, MEDIUM, HIGH, CRITICAL
-  status                  String     @default("IDP_FORM") // IDP_FORM, HUKUK_INCELEMESI, SON_KONTROL, RAPOR_URETIMI, KURUM_BEKLENIYOR, TAMAMLANDI
-  tags                    String     @default("[]") // JSON stored as string
-  geographicScope         String     // LOCAL, REGIONAL, NATIONAL, INTERNATIONAL
-  sourceType              String     // SOCIAL_MEDIA, NEWS_SITE, BLOG, FORUM, MESSAGING_APP, OTHER
-  sourceUrl               String?
-  
+  id              Int     @id @default(autoincrement())
+  caseNumber      String  @unique
+  title           String
+  description     String
+  platform        String // TWITTER, FACEBOOK, INSTAGRAM, YOUTUBE, WHATSAPP, TELEGRAM, TIKTOK, OTHER
+  priority        String // LOW, MEDIUM, HIGH, CRITICAL
+  status          String  @default("IDP_FORM") // IDP_FORM, HUKUK_INCELEMESI, SON_KONTROL, RAPOR_URETIMI, KURUM_BEKLENIYOR, TAMAMLANDI
+  tags            String  @default("[]") // JSON stored as string
+  geographicScope String // LOCAL, REGIONAL, NATIONAL, INTERNATIONAL
+  sourceType      String // SOCIAL_MEDIA, NEWS_SITE, BLOG, FORUM, MESSAGING_APP, OTHER
+  sourceUrl       String?
+
   // Additional news fields
-  newsHeadline            String?
-  newspaperAuthor         String?
-  newsSummary             String?
-  ministryInfo            String?
-  relatedMinistry         String?
-  submittedTo             String?
-  submittingUnit          String?
-  preparedBy              String?
-  disinformationType      String?
-  expertEvaluation        String?
-  legalEvaluation         String?
-  recommendationDMM       String?
-  recommendationDMK       String?
-  
+  newsHeadline       String?
+  newspaperAuthor    String?
+  newsSummary        String?
+  ministryInfo       String?
+  relatedMinistry    String?
+  submittedTo        String?
+  submittingUnit     String?
+  preparedBy         String?
+  disinformationType String?
+  expertEvaluation   String?
+  legalEvaluation    String?
+  recommendationDMM  String?
+  recommendationDMK  String?
+
   // IDP Form fields
-  idpAssessment           String?
-  idpNotes                String?
-  
+  idpAssessment String?
+  idpNotes      String?
+
   // Legal Review fields
-  legalAssessment         String?
-  legalNotes              String?
-  legalApproved           Boolean?
-  legalReviewerId         Int?
-  legalReviewDate         DateTime?
-  
+  legalAssessment String?
+  legalNotes      String?
+  legalApproved   Boolean?
+  legalReviewerId Int?
+  legalReviewDate DateTime?
+
   // Final Control fields
-  finalNotes              String?
-  finalApproval           Boolean?
-  finalReviewerId         Int?
-  finalReviewDate         DateTime?
-  
+  finalNotes      String?
+  finalApproval   Boolean?
+  finalReviewerId Int?
+  finalReviewDate DateTime?
+
   // Report fields
-  internalReport          String?
-  externalReport          String?
-  targetMinistry          String?
-  reportGeneratedDate     DateTime?
-  
+  internalReport      String?
+  externalReport      String?
+  targetMinistry      String? // Backward compatibility - will be deprecated
+  targetInstitutionId Int? // Foreign key to Institution
+  reportGeneratedDate DateTime?
+
   // Institution Response fields
   institutionResponse     String?
   institutionResponderId  Int?
   institutionResponseDate DateTime?
   correctiveInfo          String?
-  
-  createdById             Int
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+
+  createdById Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  creator               User         @relation("CreatedCases", fields: [createdById], references: [id])
-  legalReviewer         User?        @relation("LegalReviewedCases", fields: [legalReviewerId], references: [id])
-  finalReviewer         User?        @relation("FinalReviewedCases", fields: [finalReviewerId], references: [id])
-  institutionResponder  User?        @relation("InstitutionResponses", fields: [institutionResponderId], references: [id])
-  files                 CaseFile[]
-  history               CaseHistory[]
-  tasks                 Task[]
+  creator              User          @relation("CreatedCases", fields: [createdById], references: [id])
+  legalReviewer        User?         @relation("LegalReviewedCases", fields: [legalReviewerId], references: [id])
+  finalReviewer        User?         @relation("FinalReviewedCases", fields: [finalReviewerId], references: [id])
+  institutionResponder User?         @relation("InstitutionResponses", fields: [institutionResponderId], references: [id])
+  targetInstitution    Institution?  @relation(fields: [targetInstitutionId], references: [id])
+  files                CaseFile[]
+  history              CaseHistory[]
+  tasks                Task[]
+
+  @@index([targetInstitutionId])
 }
 
 model CaseFile {
-  id          Int      @id @default(autoincrement())
-  caseId      Int
-  fileName    String
-  filePath    String
-  fileType    String
-  fileSize    Int
+  id           Int      @id @default(autoincrement())
+  caseId       Int
+  fileName     String
+  filePath     String
+  fileType     String
+  fileSize     Int
   uploadedById Int
-  uploadedAt  DateTime @default(now())
+  uploadedAt   DateTime @default(now())
 
   // Relations
-  case        Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  uploader    User     @relation(fields: [uploadedById], references: [id])
+  case     Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploader User @relation(fields: [uploadedById], references: [id])
 }
 
 model CaseHistory {
-  id        Int        @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   caseId    Int
   userId    Int
   action    String
-  oldStatus String     // CaseStatus values as string
-  newStatus String     // CaseStatus values as string
+  oldStatus String // CaseStatus values as string
+  newStatus String // CaseStatus values as string
   notes     String?
-  createdAt DateTime   @default(now())
+  createdAt DateTime @default(now())
 
   // Relations
-  case      Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  user      User       @relation(fields: [userId], references: [id])
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 }
 
 model Task {
-  id              Int        @id @default(autoincrement())
-  title           String
-  description     String
-  priority        String     @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
-  status          String     @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
-  assignedToId    Int
-  assignedById    Int
-  caseId          Int?
-  dueDate         DateTime?
-  completedAt     DateTime?
-  feedback        String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id           Int       @id @default(autoincrement())
+  title        String
+  description  String
+  priority     String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  status       String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+  assignedToId Int
+  assignedById Int
+  caseId       Int?
+  dueDate      DateTime?
+  completedAt  DateTime?
+  feedback     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   // Relations
-  assignedTo      User       @relation("AssignedTasks", fields: [assignedToId], references: [id])
-  assignedBy      User       @relation("CreatedTasks", fields: [assignedById], references: [id])
-  case            Case?      @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  comments        TaskComment[]
+  assignedTo User          @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  assignedBy User          @relation("CreatedTasks", fields: [assignedById], references: [id])
+  case       Case?         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  comments   TaskComment[]
 
   @@index([assignedToId])
   @@index([assignedById])
@@ -179,15 +203,15 @@ model Task {
 }
 
 model TaskComment {
-  id          Int      @id @default(autoincrement())
-  taskId      Int
-  userId      Int
-  comment     String
-  createdAt   DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  taskId    Int
+  userId    Int
+  comment   String
+  createdAt DateTime @default(now())
 
   // Relations
-  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id])
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 
   @@index([taskId])
   @@index([userId])
@@ -201,7 +225,7 @@ model Conversation {
   updatedAt       DateTime @updatedAt
   lastMessageAt   DateTime @default(now())
   lastMessageText String?
-  
+
   participants ConversationParticipant[]
   messages     Message[]
 }
@@ -213,10 +237,10 @@ model ConversationParticipant {
   joinedAt       DateTime @default(now())
   lastReadAt     DateTime @default(now())
   isActive       Boolean  @default(true)
-  
+
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id])
-  
+
   @@unique([conversationId, userId])
   @@index([userId])
   @@index([conversationId])
@@ -230,11 +254,11 @@ model Message {
   isEdited       Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User         @relation(fields: [senderId], references: [id])
+
+  conversation Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User          @relation(fields: [senderId], references: [id])
   readBy       MessageRead[]
-  
+
   @@index([conversationId])
   @@index([senderId])
 }
@@ -244,10 +268,10 @@ model MessageRead {
   messageId Int
   userId    Int
   readAt    DateTime @default(now())
-  
+
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
-  
+
   @@unique([messageId, userId])
   @@index([userId])
   @@index([messageId])
