@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     if (currentUser.role === 'IDP_PERSONNEL') {
       whereConditions.push({
         status: {
-          in: ['IDP_FORM', 'IDP_UZMAN_GORUSU', 'IDP_SON_KONTROL', 'TAMAMLANDI'],
+          in: ['IDP_FORM', 'IDP_UZMAN_GORUSU', 'IDP_SON_KONTROL', 'ADMIN_ONAYI_BEKLENIYOR', 'TAMAMLANDI'],
         },
       });
     }

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         statusFilter = ['KURUM_BEKLENIYOR', 'TAMAMLANDI'];
         break;
       case 'IDP_PERSONNEL':
-        statusFilter = ['IDP_FORM', 'IDP_UZMAN_GORUSU', 'IDP_SON_KONTROL', 'TAMAMLANDI'];
+        statusFilter = ['IDP_FORM', 'IDP_UZMAN_GORUSU', 'IDP_SON_KONTROL', 'ADMIN_ONAYI_BEKLENIYOR', 'TAMAMLANDI'];
         break;
       default:
         // ADMIN için tüm durumlar

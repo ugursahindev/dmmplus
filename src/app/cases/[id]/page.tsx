@@ -39,8 +39,10 @@ import {
   MapPin,
   Tag,
   Paperclip,
-  Download
+  Download,
+  Image as ImageIcon
 } from 'lucide-react';
+import Image from 'next/image';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -569,6 +571,21 @@ export default function CaseDetailPage() {
                   </div>
                 )}
 
+                {caseData.institutionResponse && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Kurum Yanıtı</h4>
+                    <p className="text-sm">{caseData.institutionResponse}</p>
+                    {caseData.correctiveInfo && (
+                      <div className="mt-2 p-3 bg-success-50 dark:bg-success-900/20 rounded-lg">
+                        <p className="text-sm font-medium text-success-700 dark:text-success-300">
+                          Düzeltici Bilgi:
+                        </p>
+                        <p className="text-sm mt-1">{caseData.correctiveInfo}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {caseData.expertEvaluation && (
                   <div>
                     <h4 className="font-semibold mb-2">Uzman Görüşü</h4>
@@ -590,21 +607,6 @@ export default function CaseDetailPage() {
                     >
                       {caseData.legalApproved ? 'Onaylandı' : 'Reddedildi'}
                     </Chip>
-                  </div>
-                )}
-
-                {caseData.institutionResponse && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Kurum Yanıtı</h4>
-                    <p className="text-sm">{caseData.institutionResponse}</p>
-                    {caseData.correctiveInfo && (
-                      <div className="mt-2 p-3 bg-success-50 dark:bg-success-900/20 rounded-lg">
-                        <p className="text-sm font-medium text-success-700 dark:text-success-300">
-                          Düzeltici Bilgi:
-                        </p>
-                        <p className="text-sm mt-1">{caseData.correctiveInfo}</p>
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -702,38 +704,93 @@ export default function CaseDetailPage() {
             <Card className="mt-4">
               <CardBody>
                 {caseData.files && caseData.files.length > 0 ? (
-                  <div className="space-y-3">
-                    {caseData.files.map((file: any) => (
-                      <div key={file.id} className="flex items-center justify-between p-3 bg-default-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-default-100">
-                            <Paperclip className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{file.fileName}</p>
-                            <p className="text-sm text-default-500">
-                              {(file.fileSize / 1024).toFixed(2)} KB • {new Date(file.uploadedAt).toLocaleDateString('tr-TR')}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Chip size="sm" variant="flat" color="default">
-                            {file.uploadedBy?.fullName || 'Bilinmeyen'}
-                          </Chip>
-                          <Button
-                            as="a"
-                            href={`/api/files${file.filePath.startsWith('/') ? file.filePath : '/' + file.filePath}`}
-                            target="_blank"
-                            size="sm"
-                            color="primary"
-                            variant="flat"
-                            startContent={<Download className="w-4 h-4" />}
-                          >
-                            İndir
-                          </Button>
+                  <div className="space-y-6">
+                    {/* Görseller */}
+                    {caseData.files.filter((file: any) => file.fileType?.startsWith('image/')).length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4">Görseller</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {caseData.files
+                            .filter((file: any) => file.fileType?.startsWith('image/'))
+                            .map((file: any) => (
+                              <div key={file.id} className="relative group">
+                                <div className="relative w-full h-48 bg-default-100 rounded-lg overflow-hidden">
+                                  <Image
+                                    src={file.filePath.startsWith('/') ? file.filePath : `/${file.filePath}`}
+                                    alt={file.fileName}
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                  />
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                    <div className="flex gap-2">
+                                      <Button
+                                        as="a"
+                                        href={file.filePath.startsWith('/') ? file.filePath : `/${file.filePath}`}
+                                        target="_blank"
+                                        size="sm"
+                                        color="primary"
+                                        variant="flat"
+                                        startContent={<Download className="w-4 h-4" />}
+                                      >
+                                        İndir
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="mt-2">
+                                  <p className="text-sm font-medium truncate">{file.fileName}</p>
+                                  <p className="text-xs text-default-500">
+                                    {(file.fileSize / 1024).toFixed(2)} KB • {new Date(file.uploadedAt).toLocaleDateString('tr-TR')}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
                         </div>
                       </div>
-                    ))}
+                    )}
+
+                    {/* Diğer Dosyalar */}
+                    {caseData.files.filter((file: any) => !file.fileType?.startsWith('image/')).length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4">Diğer Dosyalar</h3>
+                        <div className="space-y-3">
+                          {caseData.files
+                            .filter((file: any) => !file.fileType?.startsWith('image/'))
+                            .map((file: any) => (
+                              <div key={file.id} className="flex items-center justify-between p-3 bg-default-50 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                  <div className="p-2 rounded-lg bg-default-100">
+                                    <Paperclip className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium">{file.fileName}</p>
+                                    <p className="text-sm text-default-500">
+                                      {(file.fileSize / 1024).toFixed(2)} KB • {new Date(file.uploadedAt).toLocaleDateString('tr-TR')}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Chip size="sm" variant="flat" color="default">
+                                    {file.uploadedBy?.fullName || 'Bilinmeyen'}
+                                  </Chip>
+                                  <Button
+                                    as="a"
+                                    href={file.filePath.startsWith('/') ? file.filePath : `/${file.filePath}`}
+                                    target="_blank"
+                                    size="sm"
+                                    color="primary"
+                                    variant="flat"
+                                    startContent={<Download className="w-4 h-4" />}
+                                  >
+                                    İndir
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-center text-default-500 py-8">Henüz dosya yüklenmemiş</p>
