@@ -362,7 +362,8 @@ export const api = {
     search?: string,
     status?: string,
     priority?: string,
-    platform?: string
+    platform?: string,
+    pending?: boolean
   ): Promise<CasesResponse> => {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -371,6 +372,7 @@ export const api = {
       ...(status && { status }),
       ...(priority && { priority }),
       ...(platform && { platform }),
+      ...(pending !== undefined && { pending: pending.toString() }),
     });
 
     const response = await apiRequest(`${API_BASE_URL}/api/cases?${params}`, {

@@ -18,7 +18,7 @@ import {
   Tooltip,
   User
 } from '@nextui-org/react';
-import { Plus, Search, Eye, Edit, Trash2, Filter } from 'lucide-react';
+import { Search, Eye, Edit, Trash2, Filter, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import toast from 'react-hot-toast';
@@ -82,7 +82,7 @@ const statusColors: Record<string, 'default' | 'primary' | 'secondary' | 'succes
   TAMAMLANDI: 'success',
 };
 
-export default function CasesPage() {
+export default function PendingCasesPage() {
   const router = useRouter();
   const { user, token } = useAuth();
   const [cases, setCases] = useState<CaseWithCreator[]>([]);
@@ -91,7 +91,6 @@ export default function CasesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
 
   // Debounce search input
@@ -109,7 +108,7 @@ export default function CasesPage() {
       fetchCases();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, debouncedSearch, statusFilter, priorityFilter, token]);
+  }, [page, debouncedSearch, priorityFilter, token]);
 
   const fetchCases = async () => {
     try {
@@ -120,8 +119,10 @@ export default function CasesPage() {
         page,
         10,
         debouncedSearch || undefined,
-        statusFilter || undefined,
-        priorityFilter || undefined
+        undefined, // status filter - pending vakalar için kullanmıyoruz
+        priorityFilter || undefined,
+        undefined, // platform filter
+        true // pending: true
       );
       
       // API'den gelen veriyi dönüştür
@@ -139,8 +140,8 @@ export default function CasesPage() {
       setCases(casesWithCreator);
       setTotalPages(response.totalPages);
     } catch (error: any) {
-      console.error('Failed to fetch cases:', error);
-      toast.error(error.message || 'Vakalar yüklenirken hata oluştu');
+      console.error('Failed to fetch pending cases:', error);
+      toast.error(error.message || 'İşlem bekleyen vakalar yüklenirken hata oluştu');
     } finally {
       setIsLoading(false);
     }
@@ -189,20 +190,20 @@ export default function CasesPage() {
                       <Chip key={index} size="sm" variant="flat">
                         {tag}
                       </Chip>
-                  ))}
-                  {tags.length > 2 && (
-                    <Chip size="sm" variant="flat">
-                      +{tags.length - 2}
-                    </Chip>
-                  )}
-                </div>
-              );
-            })()}
-            {item.files?.length > 0 && (
-              <Chip size="sm" variant="flat" color="primary" className="ml-2">
-                📎 {item.files.length}
-              </Chip>
-            )}
+                    ))}
+                    {tags.length > 2 && (
+                      <Chip size="sm" variant="flat">
+                        +{tags.length - 2}
+                      </Chip>
+                    )}
+                  </div>
+                );
+              })()}
+              {item.files?.length > 0 && (
+                <Chip size="sm" variant="flat" color="primary" className="ml-2">
+                  📎 {item.files.length}
+                </Chip>
+              )}
             </div>
           </div>
         );
@@ -295,27 +296,26 @@ export default function CasesPage() {
 
   // Kullanıcı rollerine göre allowedRoles belirle
   const getAllowedRoles = (): UserRole[] => {
-    // Tüm roller vakaları görebilir (kendi yetkilerine göre)
+    if (!user) return [];
+    // Tüm roller işlem bekleyen vakaları görebilir (kendi yetkilerine göre)
     return ['ADMIN', 'IDP_PERSONNEL', 'LEGAL_PERSONNEL', 'INSTITUTION_USER'];
   };
-
-  // Sadece ADMIN ve IDP_PERSONNEL yeni vaka oluşturabilir
-  const canCreateCase = user?.role === 'ADMIN' || user?.role === 'IDP_PERSONNEL';
 
   return (
     <DashboardLayout allowedRoles={getAllowedRoles()}>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Tüm Vakalar</h1>
-          {canCreateCase && (
-            <Button
-              color="primary"
-              startContent={<Plus className="w-4 h-4" />}
-              onClick={() => router.push('/cases/new')}
-            >
-              Yeni Vaka
-            </Button>
-          )}
+          <div className="flex items-center gap-3">
+            <Clock className="w-6 h-6 text-warning" />
+            <h1 className="text-2xl font-bold">İşlem Bekleyen Vakalar</h1>
+          </div>
+        </div>
+
+        {/* Info Card */}
+        <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-4">
+          <p className="text-sm text-warning-800 dark:text-warning-200">
+            Bu sayfada yalnızca sizin işlem yapmanız gereken vakalar görüntülenmektedir.
+          </p>
         </div>
 
         {/* Filters */}
@@ -327,25 +327,6 @@ export default function CasesPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <Select
-            className="max-w-xs"
-            placeholder="Durum filtrele"
-            startContent={<Filter className="w-4 h-4 text-default-400" />}
-            selectedKeys={statusFilter ? [statusFilter] : []}
-            onSelectionChange={(keys) => {
-              const selectedValue = Array.from(keys)[0] as string;
-              setStatusFilter(selectedValue === 'all' || !selectedValue ? '' : selectedValue);
-              setPage(1); // Reset to first page when filtering
-            }}
-          >
-            <SelectItem key="all" value="">Tümü</SelectItem>
-            <SelectItem key="IDP_FORM" value="IDP_FORM">IDP Formu</SelectItem>
-            <SelectItem key="HUKUK_INCELEMESI" value="HUKUK_INCELEMESI">Hukuk İncelemesi</SelectItem>
-            <SelectItem key="SON_KONTROL" value="SON_KONTROL">Son Kontrol</SelectItem>
-            <SelectItem key="RAPOR_URETIMI" value="RAPOR_URETIMI">Rapor Üretimi</SelectItem>
-            <SelectItem key="KURUM_BEKLENIYOR" value="KURUM_BEKLENIYOR">Kurum Bekleniyor</SelectItem>
-            <SelectItem key="TAMAMLANDI" value="TAMAMLANDI">Tamamlandı</SelectItem>
-          </Select>
           <Select
             className="max-w-xs"
             placeholder="Öncelik filtrele"
@@ -372,7 +353,7 @@ export default function CasesPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            <Table aria-label="Vakalar tablosu">
+            <Table aria-label="İşlem bekleyen vakalar tablosu">
               <TableHeader columns={columns}>
                 {(column) => (
                   <TableColumn key={column.key}>
@@ -382,7 +363,7 @@ export default function CasesPage() {
               </TableHeader>
               <TableBody
                 items={cases}
-                emptyContent="Vaka bulunamadı"
+                emptyContent="İşlem bekleyen vaka bulunamadı"
               >
                 {(item) => (
                   <TableRow key={item.id}>
@@ -409,3 +390,4 @@ export default function CasesPage() {
     </DashboardLayout>
   );
 }
+

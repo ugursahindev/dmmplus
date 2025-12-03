@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const priority = searchParams.get('priority');
     const platform = searchParams.get('platform');
+    const pending = searchParams.get('pending') === 'true';
 
     // Sayfalama için offset hesapla
     const offset = (page - 1) * limit;
@@ -85,37 +86,71 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // INSTITUTION_USER için sadece kendi kurumuna gönderilen vakaları göster
-    if (currentUser.role === 'INSTITUTION_USER' && currentUser.institutionId) {
-      whereConditions.push({
-        OR: [
-          { targetInstitutionId: currentUser.institutionId },
-          { targetMinistry: currentUser.institution || '' },
-        ],
-      });
-      whereConditions.push({
-        status: {
-          in: ['KURUM_BEKLENIYOR', 'TAMAMLANDI'],
-        },
-      });
-    }
-    
-    // IDP_PERSONNEL için sadece ilgili durumları göster
-    if (currentUser.role === 'IDP_PERSONNEL') {
-      whereConditions.push({
-        status: {
-          in: ['IDP_FORM', 'IDP_UZMAN_GORUSU', 'IDP_SON_KONTROL', 'ADMIN_ONAYI_BEKLENIYOR', 'TAMAMLANDI'],
-        },
-      });
-    }
-    
-    // LEGAL_PERSONNEL için sadece hukuk incelemesi durumunu göster
-    if (currentUser.role === 'LEGAL_PERSONNEL') {
-      whereConditions.push({
-        status: {
-          in: ['HUKUK_INCELEMESI', 'TAMAMLANDI'],
-        },
-      });
+    // İşlem bekleyen vakalar için özel filtreleme
+    if (pending) {
+      if (currentUser.role === 'ADMIN') {
+        // Admin için: IDP_FORM, ADMIN_ONAYI_BEKLENIYOR, IDP_SON_KONTROL
+        whereConditions.push({
+          status: {
+            in: ['IDP_FORM', 'ADMIN_ONAYI_BEKLENIYOR', 'IDP_SON_KONTROL'],
+          },
+        });
+      } else if (currentUser.role === 'IDP_PERSONNEL') {
+        // IDP_PERSONNEL için: IDP_UZMAN_GORUSU
+        whereConditions.push({
+          status: 'IDP_UZMAN_GORUSU',
+        });
+      } else if (currentUser.role === 'LEGAL_PERSONNEL') {
+        // LEGAL_PERSONNEL için: HUKUK_INCELEMESI
+        whereConditions.push({
+          status: 'HUKUK_INCELEMESI',
+        });
+      } else if (currentUser.role === 'INSTITUTION_USER' && currentUser.institutionId) {
+        // INSTITUTION_USER için: KURUM_BEKLENIYOR ve kendi kurumuna yönlendirilen vakalar
+        whereConditions.push({
+          OR: [
+            { targetInstitutionId: currentUser.institutionId },
+            { targetMinistry: currentUser.institution || '' },
+          ],
+        });
+        whereConditions.push({
+          status: 'KURUM_BEKLENIYOR',
+        });
+      }
+    } else {
+      // Normal filtreleme (tüm vakalar)
+      // INSTITUTION_USER için sadece kendi kurumuna gönderilen vakaları göster
+      if (currentUser.role === 'INSTITUTION_USER' && currentUser.institutionId) {
+        whereConditions.push({
+          OR: [
+            { targetInstitutionId: currentUser.institutionId },
+            { targetMinistry: currentUser.institution || '' },
+          ],
+        });
+        whereConditions.push({
+          status: {
+            in: ['KURUM_BEKLENIYOR', 'TAMAMLANDI'],
+          },
+        });
+      }
+      
+      // IDP_PERSONNEL için sadece ilgili durumları göster
+      if (currentUser.role === 'IDP_PERSONNEL') {
+        whereConditions.push({
+          status: {
+            in: ['IDP_FORM', 'IDP_UZMAN_GORUSU', 'IDP_SON_KONTROL', 'ADMIN_ONAYI_BEKLENIYOR', 'TAMAMLANDI'],
+          },
+        });
+      }
+      
+      // LEGAL_PERSONNEL için sadece hukuk incelemesi durumunu göster
+      if (currentUser.role === 'LEGAL_PERSONNEL') {
+        whereConditions.push({
+          status: {
+            in: ['HUKUK_INCELEMESI', 'TAMAMLANDI'],
+          },
+        });
+      }
     }
 
     // Build final where clause

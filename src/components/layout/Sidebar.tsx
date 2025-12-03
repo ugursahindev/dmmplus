@@ -16,9 +16,11 @@ import {
   Building2,
   Settings,
   CheckSquare,
-  MessageSquare
+  MessageSquare,
+  ChevronDown,
+  Clock
 } from 'lucide-react';
-import { Button } from '@nextui-org/react';
+import { Button, Accordion, AccordionItem } from '@nextui-org/react';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types';
 import { ThemeToggle } from '../ThemeToggle';
@@ -28,6 +30,11 @@ interface MenuItem {
   label: string;
   href: string;
   roles: UserRole[];
+  subItems?: {
+    label: string;
+    href: string;
+    icon?: React.ReactNode;
+  }[];
 }
 
 const menuItems: MenuItem[] = [
@@ -41,7 +48,19 @@ const menuItems: MenuItem[] = [
     icon: <FileText className="w-5 h-5" />,
     label: 'Vakalar',
     href: '/cases',
-    roles: ['ADMIN', 'IDP_PERSONNEL'],
+    roles: ['ADMIN', 'IDP_PERSONNEL', 'LEGAL_PERSONNEL', 'INSTITUTION_USER'],
+    subItems: [
+      {
+        label: 'Tüm Vakalar',
+        href: '/cases',
+        icon: <FileText className="w-4 h-4" />,
+      },
+      {
+        label: 'İşlem Bekleyenler',
+        href: '/cases/pending',
+        icon: <Clock className="w-4 h-4" />,
+      },
+    ],
   },
   {
     icon: <Gavel className="w-5 h-5" />,
@@ -141,9 +160,95 @@ export default function Sidebar() {
       )}
 
       {/* Menu Items */}
-      <nav className="flex-1 p-2">
+      <nav className="flex-1 p-2 overflow-y-auto">
         {filteredMenuItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const hasSubItems = item.subItems && item.subItems.length > 0 && !isCollapsed;
+          
+          // SubItem'ları olan item'lar için: eğer pathname bir subItem ile eşleşiyorsa, parent aktif olmamalı
+          let isActive = false;
+          if (hasSubItems) {
+            // SubItem'ları olan item'lar için, sadece tam olarak parent href ile eşleşiyorsa aktif
+            isActive = pathname === item.href;
+          } else {
+            // SubItem'ları olmayan item'lar için normal kontrol
+            isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          }
+          
+          // Accordion için açık olup olmadığını kontrol et
+          const isAccordionOpen = hasSubItems && (
+            pathname === item.href || 
+            item.subItems?.some(subItem => pathname === subItem.href || pathname.startsWith(`${subItem.href}/`))
+          );
+          
+          if (hasSubItems) {
+            // SubItem'lardan herhangi biri aktif mi kontrol et
+            const anySubItemActive = item.subItems?.some(subItem => 
+              pathname === subItem.href || (pathname.startsWith(`${subItem.href}/`) && pathname !== item.href)
+            ) || false;
+            
+            return (
+              <Accordion
+                key={item.href}
+                defaultExpandedKeys={isAccordionOpen ? [item.href] : []}
+                className="mb-1"
+                itemClasses={{
+                  base: 'mb-1',
+                  title: 'text-sm font-medium',
+                  trigger: 'px-2 py-2 min-h-12',
+                  content: 'px-2 pb-2',
+                }}
+              >
+                <AccordionItem
+                  key={item.href}
+                  aria-label={item.label}
+                  title={
+                    <div className="flex items-center gap-3">
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </div>
+                  }
+                  indicator={({ isOpen }) => (
+                    <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  )}
+                >
+                  <div className="space-y-1">
+                    {item.subItems?.map((subItem) => {
+                      // SubItem aktif kontrolü: 
+                      // 1. pathname tam olarak subItem href'i ile eşleşmeli
+                      // 2. VEYA pathname subItem href'i ile başlamalı (ama parent href'i ile tam eşleşmemeli)
+                      // 3. ÖNEMLİ: Eğer subItem href'i parent href'i ile aynıysa (örn: /cases), 
+                      //    sadece tam eşleşme durumunda aktif olmalı
+                      let isSubActive = false;
+                      
+                      if (subItem.href === item.href) {
+                        // SubItem parent ile aynı href'e sahipse (örn: "Tüm Vakalar" = /cases)
+                        // Sadece tam eşleşme durumunda aktif olmalı
+                        isSubActive = pathname === subItem.href;
+                      } else {
+                        // SubItem farklı bir href'e sahipse (örn: "İşlem Bekleyenler" = /cases/pending)
+                        // Pathname subItem href'i ile eşleşmeli veya onunla başlamalı
+                        isSubActive = pathname === subItem.href || pathname.startsWith(`${subItem.href}/`);
+                      }
+                      
+                      return (
+                        <Link key={subItem.href} href={subItem.href}>
+                          <Button
+                            variant={isSubActive ? 'flat' : 'light'}
+                            color={isSubActive ? 'primary' : 'default'}
+                            className="w-full justify-start"
+                            size="sm"
+                          >
+                            {subItem.icon}
+                            <span className="ml-2">{subItem.label}</span>
+                          </Button>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </AccordionItem>
+              </Accordion>
+            );
+          }
           
           return (
             <Link key={item.href} href={item.href}>
