@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,47 +10,43 @@ datasource db {
 model Institution {
   id          Int      @id @default(autoincrement())
   name        String   @unique
-  type        String? // MINISTRY, MUNICIPALITY, OTHER
+  type        String?
   description String?
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  // Relations
-  users User[]
-  cases Case[]
+  cases       Case[]
+  users       User[]
 
   @@index([name])
 }
 
 model User {
-  id            Int      @id @default(autoincrement())
-  username      String   @unique
-  password      String
-  email         String   @unique
-  fullName      String
-  role          String // ADMIN, IDP_PERSONNEL, LEGAL_PERSONNEL, INSTITUTION_USER
-  institution   String? // Backward compatibility - will be deprecated
-  institutionId Int? // Foreign key to Institution
-  active        Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations
-  institutionRelation  Institution?              @relation(fields: [institutionId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  id                   Int                       @id @default(autoincrement())
+  username             String                    @unique
+  password             String
+  email                String                    @unique
+  fullName             String
+  role                 String
+  institution          String?
+  institutionId        Int?
+  active               Boolean                   @default(true)
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
   createdCases         Case[]                    @relation("CreatedCases")
-  legalReviewedCases   Case[]                    @relation("LegalReviewedCases")
   finalReviewedCases   Case[]                    @relation("FinalReviewedCases")
   institutionResponses Case[]                    @relation("InstitutionResponses")
+  legalReviewedCases   Case[]                    @relation("LegalReviewedCases")
   uploadedFiles        CaseFile[]
   caseActions          CaseHistory[]
-  assignedTasks        Task[]                    @relation("AssignedTasks")
-  createdTasks         Task[]                    @relation("CreatedTasks")
-  taskComments         TaskComment[]
   conversations        ConversationParticipant[]
   sentMessages         Message[]
   readMessages         MessageRead[]
   sessions             Session[]
+  createdTasks         Task[]                    @relation("CreatedTasks")
+  assignedTasks        Task[]                    @relation("AssignedTasks")
+  taskComments         TaskComment[]
+  institutionRelation  Institution?              @relation(fields: [institutionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([institutionId])
 }
@@ -64,69 +57,57 @@ model Session {
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([token])
 }
 
 model Case {
-  id              Int     @id @default(autoincrement())
-  caseNumber      String  @unique
-  title           String
-  description     String
-  platform        String // TWITTER, FACEBOOK, INSTAGRAM, YOUTUBE, WHATSAPP, TELEGRAM, TIKTOK, OTHER
-  priority        String // LOW, MEDIUM, HIGH, CRITICAL
-  status          String  @default("IDP_FORM") // IDP_FORM, ADMIN_ONAYI_BEKLENIYOR, KURUM_BEKLENIYOR, IDP_UZMAN_GORUSU, HUKUK_INCELEMESI, IDP_SON_KONTROL, TAMAMLANDI
-  tags            String  @default("[]") // JSON stored as string
-  geographicScope String // LOCAL, REGIONAL, NATIONAL, INTERNATIONAL
-  sourceType      String // SOCIAL_MEDIA, NEWS_SITE, BLOG, FORUM, MESSAGING_APP, OTHER
-  sourceUrl       String?
-
-  // Additional news fields
-  newsHeadline       String?
-  newspaperAuthor    String?
-  newsSummary        String?
-  ministryInfo       String?
-  relatedMinistry    String?
-  submittedTo        String?
-  submittingUnit     String?
-  preparedBy         String?
-  disinformationType String?
-  expertEvaluation   String?
-  legalEvaluation    String?
-  recommendation     String?
-
-  // IDP Form fields
-  idpAssessment String?
-  idpNotes      String?
-
-  // Legal Review fields
-  legalAssessment String?
-  legalNotes      String?
-  legalApproved   Boolean?
-  legalReviewerId Int?
-  legalReviewDate DateTime?
-
-  // Final Control fields
-  finalNotes      String?
-  finalApproval   Boolean?
-  finalReviewerId Int?
-  finalReviewDate DateTime?
-
-  // Report fields
-  internalReport      String?
-  externalReport      String?
-  targetMinistry      String? // Backward compatibility - will be deprecated
-  targetInstitutionId Int? // Foreign key to Institution
-  reportGeneratedDate DateTime?
-
-  // Institution Response fields
+  id                      Int           @id @default(autoincrement())
+  caseNumber              String        @unique
+  title                   String
+  description             String
+  platform                String
+  priority                String
+  status                  String        @default("IDP_FORM")
+  tags                    String        @default("[]")
+  geographicScope         String
+  sourceType              String
+  sourceUrl               String?
+  newsHeadline            String?
+  newspaperAuthor         String?
+  newsSummary             String?
+  ministryInfo            String?
+  relatedMinistry         String?
+  submittedTo             String?
+  submittingUnit          String?
+  preparedBy              String?
+  disinformationType      String?
+  expertEvaluation        String?
+  legalEvaluation         String?
+  recommendation          String?
+  idpAssessment           String?
+  idpNotes                String?
+  legalAssessment         String?
+  legalNotes              String?
+  legalApproved           Boolean?
+  legalReviewerId         Int?
+  legalReviewDate         DateTime?
+  finalNotes              String?
+  finalApproval           Boolean?
+  finalReviewerId         Int?
+  finalReviewDate         DateTime?
+  internalReport          String?
+  externalReport          String?
+  targetMinistry          String?
+  targetInstitutionId     Int?
+  reportGeneratedDate     DateTime?
   institutionResponse     String?
   institutionResponderId  Int?
   institutionResponseDate DateTime?
   correctiveInfo          String?
+<<<<<<< HEAD
 
   createdById Int
   createdAt   DateTime @default(now())
@@ -141,6 +122,19 @@ model Case {
   files                CaseFile[]
   history              CaseHistory[]
   tasks                Task[]
+=======
+  createdById             Int
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  creator                 User          @relation("CreatedCases", fields: [createdById], references: [id], onUpdate: NoAction)
+  finalReviewer           User?         @relation("FinalReviewedCases", fields: [finalReviewerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  institutionResponder    User?         @relation("InstitutionResponses", fields: [institutionResponderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  legalReviewer           User?         @relation("LegalReviewedCases", fields: [legalReviewerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  targetInstitution       Institution?  @relation(fields: [targetInstitutionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  files                   CaseFile[]
+  history                 CaseHistory[]
+  tasks                   Task[]
+>>>>>>> eb52b11 (test veritabanına bağlandı)
 
   @@index([targetInstitutionId])
 }
@@ -154,10 +148,15 @@ model CaseFile {
   fileSize     Int
   uploadedById Int
   uploadedAt   DateTime @default(now())
+<<<<<<< HEAD
 
   // Relations
   case     Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
   uploader User @relation(fields: [uploadedById], references: [id], onUpdate: NoAction, onDelete: NoAction)
+=======
+  case         Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploader     User     @relation(fields: [uploadedById], references: [id], onUpdate: NoAction)
+>>>>>>> eb52b11 (test veritabanına bağlandı)
 }
 
 model CaseHistory {
@@ -165,28 +164,34 @@ model CaseHistory {
   caseId    Int
   userId    Int
   action    String
-  oldStatus String // CaseStatus values as string
-  newStatus String // CaseStatus values as string
+  oldStatus String
+  newStatus String
   notes     String?
   createdAt DateTime @default(now())
+<<<<<<< HEAD
 
   // Relations
   case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+=======
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onUpdate: NoAction)
+>>>>>>> eb52b11 (test veritabanına bağlandı)
 }
 
 model Task {
-  id           Int       @id @default(autoincrement())
+  id           Int           @id @default(autoincrement())
   title        String
   description  String
-  priority     String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
-  status       String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+  priority     String        @default("MEDIUM")
+  status       String        @default("PENDING")
   assignedToId Int
   assignedById Int
   caseId       Int?
   dueDate      DateTime?
   completedAt  DateTime?
   feedback     String?
+<<<<<<< HEAD
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -195,6 +200,14 @@ model Task {
   assignedBy User          @relation("CreatedTasks", fields: [assignedById], references: [id], onUpdate: NoAction, onDelete: NoAction)
   case       Case?         @relation(fields: [caseId], references: [id], onDelete: Cascade)
   comments   TaskComment[]
+=======
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  assignedBy   User          @relation("CreatedTasks", fields: [assignedById], references: [id], onUpdate: NoAction)
+  assignedTo   User          @relation("AssignedTasks", fields: [assignedToId], references: [id], onUpdate: NoAction)
+  case         Case?         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  comments     TaskComment[]
+>>>>>>> eb52b11 (test veritabanına bağlandı)
 
   @@index([assignedToId])
   @@index([assignedById])
@@ -207,38 +220,50 @@ model TaskComment {
   userId    Int
   comment   String
   createdAt DateTime @default(now())
+<<<<<<< HEAD
 
   // Relations
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+=======
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onUpdate: NoAction)
+>>>>>>> eb52b11 (test veritabanına bağlandı)
 
   @@index([taskId])
   @@index([userId])
 }
 
 model Conversation {
-  id              Int      @id @default(autoincrement())
+  id              Int                       @id @default(autoincrement())
   title           String?
-  isGroup         Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  lastMessageAt   DateTime @default(now())
+  isGroup         Boolean                   @default(false)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  lastMessageAt   DateTime                  @default(now())
   lastMessageText String?
-
-  participants ConversationParticipant[]
-  messages     Message[]
+  participants    ConversationParticipant[]
+  messages        Message[]
 }
 
 model ConversationParticipant {
-  id             Int      @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   conversationId Int
   userId         Int
+<<<<<<< HEAD
   joinedAt       DateTime @default(now())
   lastReadAt     DateTime @default(now())
   isActive       Boolean  @default(true)
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+=======
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime     @default(now())
+  isActive       Boolean      @default(true)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onUpdate: NoAction)
+>>>>>>> eb52b11 (test veritabanına bağlandı)
 
   @@unique([conversationId, userId])
   @@index([userId])
@@ -246,10 +271,11 @@ model ConversationParticipant {
 }
 
 model Message {
-  id             Int      @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
   conversationId Int
   senderId       Int
   content        String
+<<<<<<< HEAD
   isEdited       Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -257,6 +283,14 @@ model Message {
   conversation Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender       User          @relation(fields: [senderId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   readBy       MessageRead[]
+=======
+  isEdited       Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User          @relation(fields: [senderId], references: [id], onUpdate: NoAction)
+  readBy         MessageRead[]
+>>>>>>> eb52b11 (test veritabanına bağlandı)
 
   @@index([conversationId])
   @@index([senderId])
@@ -267,20 +301,16 @@ model MessageRead {
   messageId Int
   userId    Int
   readAt    DateTime @default(now())
+<<<<<<< HEAD
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+=======
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onUpdate: NoAction)
+>>>>>>> eb52b11 (test veritabanına bağlandı)
 
   @@unique([messageId, userId])
   @@index([userId])
   @@index([messageId])
 }
-
-// Enum values as constants (for reference)
-// UserRole: ADMIN, IDP_PERSONNEL, LEGAL_PERSONNEL, INSTITUTION_USER
-// CaseStatus: IDP_FORM, ADMIN_ONAYI_BEKLENIYOR, KURUM_BEKLENIYOR, IDP_UZMAN_GORUSU, HUKUK_INCELEMESI, IDP_SON_KONTROL, TAMAMLANDI
-// Priority: LOW, MEDIUM, HIGH, CRITICAL
-// Platform: TWITTER, FACEBOOK, INSTAGRAM, YOUTUBE, WHATSAPP, TELEGRAM, TIKTOK, OTHER
-// GeographicScope: LOCAL, REGIONAL, NATIONAL, INTERNATIONAL
-// SourceType: SOCIAL_MEDIA, NEWS_SITE, BLOG, FORUM, MESSAGING_APP, OTHER
-// TaskStatus: PENDING, IN_PROGRESS, COMPLETED, CANCELLED
