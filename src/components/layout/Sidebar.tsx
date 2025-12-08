@@ -60,12 +60,14 @@ const menuItems: MenuItem[] = [
       },
     ],
   },
+  /*
   {
     icon: <CheckSquare className="w-5 h-5" />,
     label: 'Görevler',
     href: '/tasks',
     roles: ['ADMIN', 'IDP_PERSONNEL', 'LEGAL_PERSONNEL'],
   },
+  */
   {
     icon: <MessageSquare className="w-5 h-5" />,
     label: 'Mesajlar',

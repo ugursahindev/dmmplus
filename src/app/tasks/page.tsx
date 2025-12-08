@@ -38,7 +38,7 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Task, TaskStats, CreateTaskData, UpdateTaskData, TaskComment, CreateTaskCommentData } from '@/lib/api';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, useRequireAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
 
 const statusLabels: Record<string, string> = {
@@ -72,6 +72,7 @@ const statusColors: Record<string, 'default' | 'primary' | 'secondary' | 'succes
 export default function TasksPage() {
   const router = useRouter();
   const { user, token } = useAuth();
+  const { isLoading: authLoading } = useRequireAuth([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState<TaskStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,11 +110,10 @@ export default function TasksPage() {
   const [newComment, setNewComment] = useState('');
 
   useEffect(() => {
-    if (token) {
-      fetchTasks();
-      fetchStats();
-    }
-  }, [page, search, statusFilter, priorityFilter, assignedToFilter, assignedByFilter, caseIdFilter, token]);
+    if (!token || authLoading) return;
+    fetchTasks();
+    fetchStats();
+  }, [page, search, statusFilter, priorityFilter, assignedToFilter, assignedByFilter, caseIdFilter, token, authLoading]);
 
   const fetchTasks = async () => {
     try {
