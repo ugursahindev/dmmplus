@@ -30,11 +30,12 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) return;
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername || !password) return;
 
     setIsLoading(true);
     try {
-      await login(username, password, fromUrl);
+      await login(trimmedUsername, password, fromUrl);
     } catch (error) {
       // Error is handled in the login function
     } finally {
@@ -103,18 +104,7 @@ function LoginForm() {
               Giriş Yap
             </Button>
           </form>
-          
-          <Divider className="my-6" />
-          
-          <div className="space-y-2 text-sm text-default-500">
-            <p className="font-semibold">Demo Kullanıcılar:</p>
-            <ul className="space-y-1 ml-4">
-              <li>• Admin: admin / 123456</li>
-              <li>• IDP Personeli: idp_user / 123456</li>
-              <li>• Hukuk Personeli: legal_user / 123456</li>
-              <li>• Kurum Kullanıcısı: kurum_user / 123456</li>
-            </ul>
-          </div>
+
         </CardBody>
       </Card>
     </div>
