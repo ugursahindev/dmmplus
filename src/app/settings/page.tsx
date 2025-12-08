@@ -16,8 +16,8 @@ import {
   Textarea,
 } from '@nextui-org/react';
 import { 
-  User, Lock, Bell, Shield, Save, Eye, EyeOff,
-  Globe, Database, Mail, Building2, Key
+  User, Lock, Shield, Save, Eye, EyeOff,
+  Database, Mail, Building2, Key
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import toast from 'react-hot-toast';
@@ -35,14 +35,6 @@ interface PasswordData {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
-}
-
-interface NotificationSettings {
-  emailNotifications: boolean;
-  newCaseAlert: boolean;
-  statusChangeAlert: boolean;
-  legalReviewAlert: boolean;
-  institutionResponseAlert: boolean;
 }
 
 interface SystemSettings {
@@ -75,15 +67,6 @@ export default function SettingsPage() {
     confirmPassword: '',
   });
 
-  // Notification State
-  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
-    emailNotifications: true,
-    newCaseAlert: true,
-    statusChangeAlert: true,
-    legalReviewAlert: false,
-    institutionResponseAlert: false,
-  });
-
   // System Settings State
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     sessionTimeout: '480',
@@ -100,9 +83,6 @@ export default function SettingsPage() {
       
       try {
         const { settings } = await api.getSettings(token);
-        if (settings.notifications) {
-          setNotificationSettings(settings.notifications);
-        }
         if (settings.system) {
           setSystemSettings(settings.system);
         }
@@ -115,6 +95,16 @@ export default function SettingsPage() {
 
     loadSettings();
   }, [token]);
+
+  // Kullanıcı değiştiğinde profil formunu doldur
+  useEffect(() => {
+    setProfileData({
+      fullName: user?.fullName || '',
+      email: user?.email || '',
+      username: user?.username || '',
+      institution: user?.institution || '',
+    });
+  }, [user]);
 
   const handleProfileUpdate = async () => {
     if (!token) return;
@@ -164,22 +154,6 @@ export default function SettingsPage() {
       });
     } catch (error: any) {
       toast.error(error.message || 'Şifre güncellenirken hata oluştu');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleNotificationUpdate = async () => {
-    if (!token) return;
-    
-    setIsLoading(true);
-    try {
-      await api.updateSettings(token, {
-        notifications: notificationSettings
-      });
-      toast.success('Bildirim ayarları güncellendi');
-    } catch (error: any) {
-      toast.error(error.message || 'Bildirim ayarları güncellenirken hata oluştu');
     } finally {
       setIsLoading(false);
     }
@@ -330,74 +304,6 @@ export default function SettingsPage() {
                   startContent={<Lock className="w-4 h-4" />}
                 >
                   Şifreyi Güncelle
-                </Button>
-              </CardBody>
-            </Card>
-          </Tab>
-
-          <Tab key="notifications" title="Bildirimler">
-            <Card className="mt-4">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Bildirim Tercihleri</h3>
-                </div>
-              </CardHeader>
-              <Divider />
-              <CardBody className="space-y-4">
-                <Switch
-                  isSelected={notificationSettings.emailNotifications}
-                  onValueChange={(value) => 
-                    setNotificationSettings({ ...notificationSettings, emailNotifications: value })
-                  }
-                >
-                  E-posta bildirimleri
-                </Switch>
-                <div className="ml-8 space-y-3">
-                  <Switch
-                    isSelected={notificationSettings.newCaseAlert}
-                    onValueChange={(value) => 
-                      setNotificationSettings({ ...notificationSettings, newCaseAlert: value })
-                    }
-                    isDisabled={!notificationSettings.emailNotifications}
-                  >
-                    Yeni vaka oluşturulduğunda
-                  </Switch>
-                  <Switch
-                    isSelected={notificationSettings.statusChangeAlert}
-                    onValueChange={(value) => 
-                      setNotificationSettings({ ...notificationSettings, statusChangeAlert: value })
-                    }
-                    isDisabled={!notificationSettings.emailNotifications}
-                  >
-                    Vaka durumu değiştiğinde
-                  </Switch>
-                  <Switch
-                    isSelected={notificationSettings.legalReviewAlert}
-                    onValueChange={(value) => 
-                      setNotificationSettings({ ...notificationSettings, legalReviewAlert: value })
-                    }
-                    isDisabled={!notificationSettings.emailNotifications}
-                  >
-                    Hukuki inceleme tamamlandığında
-                  </Switch>
-                  <Switch
-                    isSelected={notificationSettings.institutionResponseAlert}
-                    onValueChange={(value) => 
-                      setNotificationSettings({ ...notificationSettings, institutionResponseAlert: value })
-                    }
-                    isDisabled={!notificationSettings.emailNotifications}
-                  >
-                    Kurum yanıtı geldiğinde
-                  </Switch>
-                </div>
-                <Button
-                  color="primary"
-                  onClick={handleNotificationUpdate}
-                  isLoading={isLoading}
-                  startContent={<Save className="w-4 h-4" />}
-                >
-                  Bildirimleri Kaydet
                 </Button>
               </CardBody>
             </Card>
