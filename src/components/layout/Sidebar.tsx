@@ -190,13 +190,13 @@ export default function Sidebar() {
                   key={item.href}
                   aria-label={item.label}
                   title={
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center">
                       {item.icon}
-                      <span>{item.label}</span>
+                      <span className="ml-3" style={{ paddingLeft: '9px', fontWeight: 400 }}>{item.label}</span>
                     </div>
                   }
                   indicator={({ isOpen }) => (
-                    <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ''}`} />
                   )}
                 >
                   <div className="space-y-1">

@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Jost } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers'
 import ErrorBoundary from '@/components/ErrorBoundary';
 
-const inter = Inter({ subsets: ['latin'] });
+//const inter = Inter({ subsets: ['latin'] });
+const jost = Jost({ subsets: ['latin'] }); 
 
 export const metadata: Metadata = {
   title: 'DMM - Dezenformasyonla Mücadele Merkezi',
@@ -18,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="tr" suppressHydrationWarning>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={jost.className} suppressHydrationWarning>
         <ErrorBoundary>
           <Providers>{children}</Providers>
         </ErrorBoundary>
