@@ -174,13 +174,14 @@ export default function Sidebar() {
                   )}
                 >
                   <div className="space-y-1">
-                    {item.subItems?.map((subItem) => {
+                    {item.subItems?.map((subItem, subIndex) => {
                       // SubItem aktif kontrolü: 
                       // 1. pathname tam olarak subItem href'i ile eşleşmeli
                       // 2. VEYA pathname subItem href'i ile başlamalı (ama parent href'i ile tam eşleşmemeli)
                       // 3. ÖNEMLİ: Eğer subItem href'i parent href'i ile aynıysa (örn: /cases), 
                       //    sadece tam eşleşme durumunda aktif olmalı
                       let isSubActive = false;
+                      const isLastSubItem = subIndex === (item.subItems?.length ?? 0) - 1;
                       
                       if (subItem.href === item.href) {
                         // SubItem parent ile aynı href'e sahipse (örn: "Tüm Vakalar" = /cases)
@@ -199,6 +200,7 @@ export default function Sidebar() {
                             color={isSubActive ? 'primary' : 'default'}
                             className="w-full justify-start"
                             size="sm"
+                            style={{ marginBottom: isLastSubItem ? '0' : '5px' }}
                           >
                             {subItem.icon}
                             <span className="ml-2">{subItem.label}</span>
