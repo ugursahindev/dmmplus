@@ -564,6 +564,8 @@ export default function UsersPage() {
               placeholder="Kullanıcı ara..."
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
+              name="user-search"
+              autoComplete="off"
               startContent={<Search className="w-4 h-4 text-default-400" />}
               className="max-w-md"
             />
@@ -614,12 +616,16 @@ export default function UsersPage() {
           <ModalContent>
             <ModalHeader>Yeni Kullanıcı Oluştur</ModalHeader>
             <ModalBody>
-              <div className="space-y-4">
+              <form className="space-y-4" autoComplete="off">
                 <Input
                   label="Kullanıcı Adı"
                   placeholder="kullanici_adi"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  name="create-user-username"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   isRequired
                 />
                 <Input
@@ -628,6 +634,10 @@ export default function UsersPage() {
                   placeholder="kullanici@dmm.gov.tr"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  name="create-user-email"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   isRequired
                 />
                 <Input
@@ -635,6 +645,9 @@ export default function UsersPage() {
                   placeholder="Ad Soyad"
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  name="create-user-fullname"
+                  autoComplete="off"
+                  spellCheck={false}
                   isRequired
                 />
                 <Input
@@ -643,6 +656,8 @@ export default function UsersPage() {
                   placeholder="Şifre"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  name="create-user-password"
+                  autoComplete="new-password"
                   isRequired
                 />
                 <Select
@@ -683,7 +698,7 @@ export default function UsersPage() {
                 >
                   Aktif Kullanıcı
                 </Switch>
-              </div>
+              </form>
             </ModalBody>
             <ModalFooter>
               <Button variant="light" onClick={onCreateClose}>
@@ -705,11 +720,15 @@ export default function UsersPage() {
           <ModalContent>
             <ModalHeader>Kullanıcıyı Düzenle</ModalHeader>
             <ModalBody>
-              <div className="space-y-4">
+              <form className="space-y-4" autoComplete="off">
                 <Input
                   label="Kullanıcı Adı"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                  name="edit-user-username"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   isRequired
                 />
                 <Input
@@ -717,12 +736,19 @@ export default function UsersPage() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  name="edit-user-email"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   isRequired
                 />
                 <Input
                   label="Ad Soyad"
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  name="edit-user-fullname"
+                  autoComplete="off"
+                  spellCheck={false}
                   isRequired
                 />
                 <Input
@@ -731,6 +757,8 @@ export default function UsersPage() {
                   placeholder="Boş bırakırsanız değişmez"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  name="edit-user-password"
+                  autoComplete="new-password"
                 />
                 <Select
                   label="Rol"
@@ -770,7 +798,7 @@ export default function UsersPage() {
                 >
                   Aktif Kullanıcı
                 </Switch>
-              </div>
+              </form>
             </ModalBody>
             <ModalFooter>
               <Button variant="light" onClick={onEditClose}>
