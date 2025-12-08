@@ -1,19 +1,14 @@
 'use client';
-
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  Home, 
-  FileText, 
-  Users, 
-  BarChart3, 
+import {
+  Home,
+  FileText,
+  Users,
+  BarChart3,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
   Shield,
   Settings,
-  CheckSquare,
   MessageSquare,
   ChevronDown,
   Clock
@@ -95,7 +90,6 @@ const menuItems: MenuItem[] = [
 ];
 
 export default function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
@@ -106,37 +100,22 @@ export default function Sidebar() {
   );
 
   return (
-    <aside className={`${
-      isCollapsed ? 'w-16' : 'w-64'
-    } bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 flex flex-col h-screen`}>
+    <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col h-screen">
       
       {/* Header */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between">
-          <div className={`flex items-center gap-2 ${isCollapsed ? 'justify-center' : ''}`}>
-            <Shield className="w-8 h-8 text-primary" />
-            {!isCollapsed && (
-              <div>
-                <h1 className="text-xl font-bold">DMM</h1>
-                <p className="text-xs text-default-500">Yönetim Paneli</p>
-              </div>
-            )}
+        <div className="flex items-center gap-2">
+          <Shield className="w-8 h-8 text-primary" />
+          <div>
+            <h1 className="text-xl font-bold">DMM</h1>
+            <p className="text-xs text-default-500">Yönetim Paneli</p>
           </div>
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className={isCollapsed ? 'mx-auto' : ''}
-          >
-            {isCollapsed ? <ChevronRight /> : <ChevronLeft />}
-          </Button>
         </div>
       </div>
 
       {/* User Info */}
-      {!isCollapsed && (
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 space-y-3">
+        <div>
           <p className="text-sm font-medium">{user.fullName}</p>
           <p className="text-xs text-default-500">
             {user.role === 'ADMIN' && 'Yönetici'}
@@ -145,12 +124,12 @@ export default function Sidebar() {
             {user.role === 'INSTITUTION_USER' && 'Kurum Sorumlusu'}
           </p>
         </div>
-      )}
+      </div>
 
       {/* Menu Items */}
-      <nav className="flex-1 p-2 overflow-y-auto">
+      <nav className="flex-1 p-4 overflow-y-auto">
         {filteredMenuItems.map((item) => {
-          const hasSubItems = item.subItems && item.subItems.length > 0 && !isCollapsed;
+          const hasSubItems = item.subItems && item.subItems.length > 0;
           
           // SubItem'ları olan item'lar için: eğer pathname bir subItem ile eşleşiyorsa, parent aktif olmamalı
           let isActive = false;
@@ -169,11 +148,6 @@ export default function Sidebar() {
           );
           
           if (hasSubItems) {
-            // SubItem'lardan herhangi biri aktif mi kontrol et
-            const anySubItemActive = item.subItems?.some(subItem => 
-              pathname === subItem.href || (pathname.startsWith(`${subItem.href}/`) && pathname !== item.href)
-            ) || false;
-            
             return (
               <Accordion
                 key={item.href}
@@ -243,33 +217,31 @@ export default function Sidebar() {
               <Button
                 variant={isActive ? 'flat' : 'light'}
                 color={isActive ? 'primary' : 'default'}
-                className={`w-full justify-start mb-1 ${
-                  isCollapsed ? 'px-2' : ''
-                }`}
+                className="w-full justify-start mb-1"
               >
                 {item.icon}
-                {!isCollapsed && <span className="ml-3">{item.label}</span>}
+                <span className="ml-3">{item.label}</span>
               </Button>
             </Link>
           );
         })}
       </nav>
 
-      {/* Bottom Actions */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
-        <div className="flex items-center justify-center mb-2">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="light"
+            color="danger"
+            className="flex-1 justify-start"
+            onClick={logout}
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="ml-3">Çıkış Yap</span>
+          </Button>
           <ThemeToggle />
         </div>
-        <Button
-          variant="light"
-          color="danger"
-          className={`w-full justify-start ${isCollapsed ? 'px-2' : ''}`}
-          onClick={logout}
-        >
-          <LogOut className="w-5 h-5" />
-          {!isCollapsed && <span className="ml-3">Çıkış Yap</span>}
-        </Button>
       </div>
+
     </aside>
   );
 }
