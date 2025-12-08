@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authUtils } from '@/lib/auth';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
+// Dosyaları uzak veritabanına yazmak için fs kullanımı kaldırıldı
 
 export async function POST(
   request: NextRequest,
@@ -74,12 +72,6 @@ export async function POST(
       );
     }
 
-    // Dosya yükleme dizinini oluştur
-    const uploadDir = join(process.cwd(), 'public', 'uploads', 'cases', caseId.toString());
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
     const uploadedFiles = [];
 
     // Her dosyayı yükle
@@ -93,23 +85,46 @@ export async function POST(
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      // Dosya adını güvenli hale getir
-      const timestamp = Date.now();
-      const safeFileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-      const filePath = join(uploadDir, safeFileName);
-
-      // Dosyayı kaydet
-      await writeFile(filePath, buffer);
-
-      // Veritabanına kaydet
-      const caseFile = await prisma.caseFile.create({
+      // Dosyayı doğrudan veritabanına kaydet
+      const created = await prisma.caseFile.create({
         data: {
           caseId: caseId,
           fileName: file.name,
-          filePath: `/uploads/cases/${caseId}/${safeFileName}`,
+          filePath: 'pending',
           fileType: file.type,
           fileSize: file.size,
           uploadedById: currentUser.id,
+          fileData: buffer,
+        },
+        select: {
+          id: true,
+          fileName: true,
+          fileType: true,
+          fileSize: true,
+          uploadedAt: true,
+          uploadedById: true,
+        },
+      });
+
+      const filePath = `/api/case-files/${created.id}`;
+
+      const caseFile = await prisma.caseFile.update({
+        where: { id: created.id },
+        data: { filePath },
+        select: {
+          id: true,
+          fileName: true,
+          fileType: true,
+          fileSize: true,
+          uploadedAt: true,
+          uploader: {
+            select: {
+              id: true,
+              username: true,
+              fullName: true,
+            },
+          },
+          filePath: true,
         },
       });
 

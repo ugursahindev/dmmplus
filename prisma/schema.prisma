@@ -107,34 +107,17 @@ model Case {
   institutionResponderId  Int?
   institutionResponseDate DateTime?
   correctiveInfo          String?
-<<<<<<< HEAD
-
-  createdById Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  creator              User          @relation("CreatedCases", fields: [createdById], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  legalReviewer        User?         @relation("LegalReviewedCases", fields: [legalReviewerId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  finalReviewer        User?         @relation("FinalReviewedCases", fields: [finalReviewerId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  institutionResponder User?         @relation("InstitutionResponses", fields: [institutionResponderId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  targetInstitution    Institution?  @relation(fields: [targetInstitutionId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  files                CaseFile[]
-  history              CaseHistory[]
-  tasks                Task[]
-=======
   createdById             Int
   createdAt               DateTime      @default(now())
   updatedAt               DateTime      @updatedAt
   creator                 User          @relation("CreatedCases", fields: [createdById], references: [id], onUpdate: NoAction)
+  legalReviewer           User?         @relation("LegalReviewedCases", fields: [legalReviewerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   finalReviewer           User?         @relation("FinalReviewedCases", fields: [finalReviewerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   institutionResponder    User?         @relation("InstitutionResponses", fields: [institutionResponderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  legalReviewer           User?         @relation("LegalReviewedCases", fields: [legalReviewerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   targetInstitution       Institution?  @relation(fields: [targetInstitutionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   files                   CaseFile[]
   history                 CaseHistory[]
   tasks                   Task[]
->>>>>>> eb52b11 (test veritabanına bağlandı)
 
   @@index([targetInstitutionId])
 }
@@ -144,19 +127,13 @@ model CaseFile {
   caseId       Int
   fileName     String
   filePath     String
+  fileData     Bytes?
   fileType     String
   fileSize     Int
   uploadedById Int
   uploadedAt   DateTime @default(now())
-<<<<<<< HEAD
-
-  // Relations
-  case     Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  uploader User @relation(fields: [uploadedById], references: [id], onUpdate: NoAction, onDelete: NoAction)
-=======
   case         Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  uploader     User     @relation(fields: [uploadedById], references: [id], onUpdate: NoAction)
->>>>>>> eb52b11 (test veritabanına bağlandı)
+  uploader     User     @relation(fields: [uploadedById], references: [id], onUpdate: NoAction, onDelete: NoAction)
 }
 
 model CaseHistory {
@@ -168,15 +145,8 @@ model CaseHistory {
   newStatus String
   notes     String?
   createdAt DateTime @default(now())
-<<<<<<< HEAD
-
-  // Relations
   case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-=======
-  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onUpdate: NoAction)
->>>>>>> eb52b11 (test veritabanına bağlandı)
 }
 
 model Task {
@@ -191,23 +161,12 @@ model Task {
   dueDate      DateTime?
   completedAt  DateTime?
   feedback     String?
-<<<<<<< HEAD
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  // Relations
-  assignedTo User          @relation("AssignedTasks", fields: [assignedToId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  assignedBy User          @relation("CreatedTasks", fields: [assignedById], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  case       Case?         @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  comments   TaskComment[]
-=======
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  assignedBy   User          @relation("CreatedTasks", fields: [assignedById], references: [id], onUpdate: NoAction)
-  assignedTo   User          @relation("AssignedTasks", fields: [assignedToId], references: [id], onUpdate: NoAction)
+  assignedBy   User          @relation("CreatedTasks", fields: [assignedById], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  assignedTo   User          @relation("AssignedTasks", fields: [assignedToId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   case         Case?         @relation(fields: [caseId], references: [id], onDelete: Cascade)
   comments     TaskComment[]
->>>>>>> eb52b11 (test veritabanına bağlandı)
 
   @@index([assignedToId])
   @@index([assignedById])
@@ -220,15 +179,8 @@ model TaskComment {
   userId    Int
   comment   String
   createdAt DateTime @default(now())
-<<<<<<< HEAD
-
-  // Relations
-  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-=======
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onUpdate: NoAction)
->>>>>>> eb52b11 (test veritabanına bağlandı)
+  user      User     @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
 
   @@index([taskId])
   @@index([userId])
@@ -250,20 +202,11 @@ model ConversationParticipant {
   id             Int          @id @default(autoincrement())
   conversationId Int
   userId         Int
-<<<<<<< HEAD
-  joinedAt       DateTime @default(now())
-  lastReadAt     DateTime @default(now())
-  isActive       Boolean  @default(true)
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-=======
   joinedAt       DateTime     @default(now())
   lastReadAt     DateTime     @default(now())
   isActive       Boolean      @default(true)
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onUpdate: NoAction)
->>>>>>> eb52b11 (test veritabanına bağlandı)
+  user           User         @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
 
   @@unique([conversationId, userId])
   @@index([userId])
@@ -275,22 +218,12 @@ model Message {
   conversationId Int
   senderId       Int
   content        String
-<<<<<<< HEAD
-  isEdited       Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  conversation Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User          @relation(fields: [senderId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  readBy       MessageRead[]
-=======
   isEdited       Boolean       @default(false)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User          @relation(fields: [senderId], references: [id], onUpdate: NoAction)
+  sender         User          @relation(fields: [senderId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   readBy         MessageRead[]
->>>>>>> eb52b11 (test veritabanına bağlandı)
 
   @@index([conversationId])
   @@index([senderId])
@@ -301,14 +234,8 @@ model MessageRead {
   messageId Int
   userId    Int
   readAt    DateTime @default(now())
-<<<<<<< HEAD
-
-  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-=======
   message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onUpdate: NoAction)
->>>>>>> eb52b11 (test veritabanına bağlandı)
+  user      User     @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
 
   @@unique([messageId, userId])
   @@index([userId])
