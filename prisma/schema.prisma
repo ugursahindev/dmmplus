@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "sqlserver"
   url      = env("DATABASE_URL")
 }
 
@@ -40,7 +40,7 @@ model User {
   updatedAt     DateTime @updatedAt
 
   // Relations
-  institutionRelation  Institution?              @relation(fields: [institutionId], references: [id])
+  institutionRelation  Institution?              @relation(fields: [institutionId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   createdCases         Case[]                    @relation("CreatedCases")
   legalReviewedCases   Case[]                    @relation("LegalReviewedCases")
   finalReviewedCases   Case[]                    @relation("FinalReviewedCases")
@@ -59,7 +59,7 @@ model User {
 }
 
 model Session {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   userId    Int
   token     String   @unique
   expiresAt DateTime
@@ -133,11 +133,11 @@ model Case {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  creator              User          @relation("CreatedCases", fields: [createdById], references: [id])
-  legalReviewer        User?         @relation("LegalReviewedCases", fields: [legalReviewerId], references: [id])
-  finalReviewer        User?         @relation("FinalReviewedCases", fields: [finalReviewerId], references: [id])
-  institutionResponder User?         @relation("InstitutionResponses", fields: [institutionResponderId], references: [id])
-  targetInstitution    Institution?  @relation(fields: [targetInstitutionId], references: [id])
+  creator              User          @relation("CreatedCases", fields: [createdById], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  legalReviewer        User?         @relation("LegalReviewedCases", fields: [legalReviewerId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  finalReviewer        User?         @relation("FinalReviewedCases", fields: [finalReviewerId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  institutionResponder User?         @relation("InstitutionResponses", fields: [institutionResponderId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  targetInstitution    Institution?  @relation(fields: [targetInstitutionId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   files                CaseFile[]
   history              CaseHistory[]
   tasks                Task[]
@@ -157,7 +157,7 @@ model CaseFile {
 
   // Relations
   case     Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  uploader User @relation(fields: [uploadedById], references: [id])
+  uploader User @relation(fields: [uploadedById], references: [id], onUpdate: NoAction, onDelete: NoAction)
 }
 
 model CaseHistory {
@@ -172,7 +172,7 @@ model CaseHistory {
 
   // Relations
   case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
 }
 
 model Task {
@@ -191,8 +191,8 @@ model Task {
   updatedAt    DateTime  @updatedAt
 
   // Relations
-  assignedTo User          @relation("AssignedTasks", fields: [assignedToId], references: [id])
-  assignedBy User          @relation("CreatedTasks", fields: [assignedById], references: [id])
+  assignedTo User          @relation("AssignedTasks", fields: [assignedToId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  assignedBy User          @relation("CreatedTasks", fields: [assignedById], references: [id], onUpdate: NoAction, onDelete: NoAction)
   case       Case?         @relation(fields: [caseId], references: [id], onDelete: Cascade)
   comments   TaskComment[]
 
@@ -210,7 +210,7 @@ model TaskComment {
 
   // Relations
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
 
   @@index([taskId])
   @@index([userId])
@@ -238,7 +238,7 @@ model ConversationParticipant {
   isActive       Boolean  @default(true)
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id])
+  user         User         @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
 
   @@unique([conversationId, userId])
   @@index([userId])
@@ -255,7 +255,7 @@ model Message {
   updatedAt      DateTime @updatedAt
 
   conversation Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User          @relation(fields: [senderId], references: [id])
+  sender       User          @relation(fields: [senderId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   readBy       MessageRead[]
 
   @@index([conversationId])
@@ -269,7 +269,7 @@ model MessageRead {
   readAt    DateTime @default(now())
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id])
+  user    User    @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
 
   @@unique([messageId, userId])
   @@index([userId])
