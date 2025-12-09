@@ -10,7 +10,11 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "db:reset": "prisma db push --force-reset && prisma db seed"
+    "db:reset": "prisma db push --force-reset && prisma db seed",
+    "prebuild": "prisma generate",
+    "postbuild": "echo 'Build completed successfully!'",
+    "deploy:build": "npm run db:generate && npm run build",
+    "deploy:check": "node -e \"console.log('Node version:', process.version); console.log('NODE_ENV:', process.env.NODE_ENV || 'not set')\""
   },
   "dependencies": {
     "@nextui-org/react": "^2.6.11",

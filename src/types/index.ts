@@ -7,6 +7,8 @@ export type CaseStatus =
   | 'IDP_UZMAN_GORUSU'
   | 'HUKUK_INCELEMESI'
   | 'IDP_SON_KONTROL'
+  | 'SON_KONTROL'
+  | 'RAPOR_URETIMI'
   | 'TAMAMLANDI';
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
