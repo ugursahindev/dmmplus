@@ -1,3 +1,0 @@
-pnpm i : install the project's packages.
-
-pnpm dev : start the development server.
